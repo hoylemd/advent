@@ -8,4 +8,15 @@ for line in fileinput.input(filename):
 
 commands = ''.join(lines)
 
-print commands.count('(') - commands.count(')')
+floor = 0
+for i in range(len(commands)):
+    command = commands[i]
+    if command == '(':
+        floor += 1
+    elif command == ')':
+        floor -= 1
+
+    if floor < 0:
+        break;
+
+print (i + 1)
