@@ -1,7 +1,6 @@
 import fileinput
 
-filename = 'test.txt'
-# filename = 'input.txt'
+filename = 'input.txt'
 
 elfs_drunken_directions = ""
 for line in fileinput.input(filename):
