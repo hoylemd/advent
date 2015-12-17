@@ -1,9 +1,11 @@
 import fileinput
 
+filename = 'input.txt'
 lines = []
 
-for line in fileinput.input():
+for line in fileinput.input(filename):
     lines.append(line)
 
-for line in lines:
-    print line
+commands = ''.join(lines)
+
+print commands.count('(') - commands.count(')')
