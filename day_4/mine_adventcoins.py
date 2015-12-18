@@ -11,7 +11,9 @@ def check_for_gold(chunk):
     return chunk.startswith('00000')
 
 
-key = 'abcdef'
-number = 609043
+key = 'bgvyzdsv'
+number = 0
+while not check_for_gold(swing_pick(key, number)):
+    number += 1
 
-print check_for_gold(swing_pick(key, number))
+print number
