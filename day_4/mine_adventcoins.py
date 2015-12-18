@@ -2,8 +2,9 @@ import hashlib
 
 
 def swing_pick(key, number):
-    digest = hashlib.md5(str(key) + str(number))
-    return digest.hexdigest()
+    dig_spot = str(key) + str(number)
+    ore_chunk = hashlib.md5(dig_spot)
+    return ore_chunk.hexdigest()
 
 
 def check_for_gold(chunk):
