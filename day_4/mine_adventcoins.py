@@ -8,7 +8,7 @@ def swing_pick(key, number):
 
 
 def check_for_gold(chunk):
-    return chunk.startswith('00000')
+    return chunk.startswith('000000')
 
 
 key = 'bgvyzdsv'
