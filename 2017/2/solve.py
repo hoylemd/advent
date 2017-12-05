@@ -28,9 +28,8 @@ def checksum(spreadsheet):
 
     for row in spreadsheet:
         ordered = sorted(row)
-        print(ordered)
 
-        deltas.append(0)
+        deltas.append(ordered[-1] - ordered[0])
 
     return sum(deltas)
 
