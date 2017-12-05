@@ -8,11 +8,11 @@ def main():
     args = parser.parse_args()
 
     with open(args.path) as fp:
-        lines = fp.readline()
+        lines = fp.readlines()
 
-    sheet = (line.split() for line in lines)
+    sheet = [[int(cell) for cell in line.split()] for line in lines]
 
-    print(sheet)
+    print(checksum(sheet))
 
 
 def checksum(spreadsheet):
@@ -23,7 +23,16 @@ def checksum(spreadsheet):
     :return: checksum
     :rtype: int
     """
-    pass
+
+    deltas = []
+
+    for row in spreadsheet:
+        ordered = sorted(row)
+        print(ordered)
+
+        deltas.append(0)
+
+    return sum(deltas)
 
 
 if __name__ == '__main__':
