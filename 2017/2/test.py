@@ -4,22 +4,27 @@ from solve import checksum
 def test_simple():
     spreadsheet = (
         (5, 1, 9, 5),
-        (7, 5, 1),
+        (7, 5, 3),
         (2, 4, 6, 8),
     )
     expected = 18
 
-    return checksum(spreadsheet) == expected
+    result = checksum(spreadsheet)
+    return result, expected
 
 
-def result_label(result):
-    if result:
+def compose_result(result, expected):
+    if result == expected:
         return 'Pass'
-    return False
+
+    return (
+        'Fail: actual: {result}, expected: {expected}'
+        .format(result=result, expected=expected)
+    )
 
 
 def main():
-    print('simple test: {result}'.format(result=result_label(test_simple())))
+    print('simple test: {}'.format(compose_result(*test_simple())))
 
 
 if __name__ == '__main__':
