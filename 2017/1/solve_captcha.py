@@ -2,11 +2,13 @@ import argparse
 
 parser = argparse.ArgumentParser(description='solve a quarantine captcha')
 parser.add_argument('input_string', type=str, help='The input string')
+parser.add_argument('--opposite', '-o', action='store_true',
+                    help='True to do opposite comparisons')
 
 
 def main():
     args = parser.parse_args()
-    print(sum_matches(args.input_string))
+    print(sum_matches(args.input_string, opposite=args.opposite))
 
 
 def sum_matches(string, opposite=False):
@@ -16,7 +18,7 @@ def sum_matches(string, opposite=False):
     opposite instead of the next one:
     """
     total = 0
-    rot = len(string) / 2 if opposite else 1
+    rot = int(len(string) / 2) if opposite else 1
     for i in range(len(string)):
         current = string[i]
         other_index = (i + rot) % len(string)
