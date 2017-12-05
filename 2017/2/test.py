@@ -1,38 +1,25 @@
-from solve_captcha import sum_matches
+from solve import checksum
 
 
-def test_next():
-    cases = {
-        '1122': 3,
-        '1111': 4,
-        '1234': 0,
-        '91212129': 9,
-    }
+def test_simple():
+    spreadsheet = (
+        (5, 1, 9, 5),
+        (7, 5, 1),
+        (2, 4, 6, 8),
+    )
+    expected = 18
 
-    for string, result in cases.items():
-        result = sum_matches(string) == result
-        print('{case} {passfail}'
-              .format(case=string, passfail='Passed' if result else 'Failed'))
+    return checksum(spreadsheet) == expected
 
 
-def test_opposite():
-    cases = {
-        '1212': 6,
-        '1221': 0,
-        '123425': 4,
-        '123123': 12,
-        '12131515': 4,
-    }
-
-    for string, result in cases.items():
-        result = sum_matches(string, opposite=True) == result
-        print('{case} {passfail}'
-              .format(case=string, passfail='Passed' if result else 'Failed'))
+def result_label(result):
+    if result:
+        return 'Pass'
+    return False
 
 
 def main():
-    test_next()
-    test_opposite()
+    print('simple test: {result}'.format(result=result_label(test_simple())))
 
 
 if __name__ == '__main__':
