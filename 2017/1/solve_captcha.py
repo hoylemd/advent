@@ -9,16 +9,21 @@ def main():
     print(sum_matches(args.input_string))
 
 
-def sum_matches(string):
+def sum_matches(string, opposite=False):
+    """Sum the matches in a number string
+
+    :param opposite: True if a number should be summed if it matches it's
+    opposite instead of the next one:
+    """
     total = 0
+    rot = len(string) / 2 if opposite else 1
     for i in range(len(string)):
         current = string[i]
-        try:
-            next = string[i + 1]
-        except IndexError:
-            next = string[0]
+        other_index = (i + rot) % len(string)
 
-        if current == next:
+        other = string[other_index]
+
+        if current == other:
             total += int(current)
 
     return total
