@@ -6,6 +6,11 @@ parser.add_argument('--part_2', '-2', action='store_true',
                     help='part 2 flag')
 
 
+def solve(data, part_2=False):
+    """Implement solution here"""
+    return data
+
+
 def main():
     args = parser.parse_args()
 
@@ -16,11 +21,6 @@ def main():
     data = '\n'.join(lines)
 
     print(solve(data, part_2=args.part_2))
-
-
-def solve(data, part_2=False):
-    """Implement solution here"""
-    return data
 
 
 if __name__ == '__main__':
