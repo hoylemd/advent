@@ -23,7 +23,11 @@ def validate(phrase):
 
 def solve(phrases, part_2=False):
     """Implement solution here"""
-    return len(phrase for phrase in phrases if validate(phrase))
+    n_valid = 0
+    for phrase in phrases:
+        n_valid += 1 if validate(phrase) else 0
+
+    return n_valid
 
 
 def main():
