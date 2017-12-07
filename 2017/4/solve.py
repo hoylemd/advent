@@ -8,7 +8,17 @@ parser.add_argument('--part_2', '-2', action='store_true',
 
 def validate(phrase):
     """ensure contains no duplicate words"""
-    return False
+    seen_words = {}
+    words = phrase.split()
+
+    for word in words:
+        try:
+            if seen_words[word]:
+                return False
+        except KeyError:
+            seen_words[word] = True
+
+    return True
 
 
 def solve(phrases, part_2=False):
