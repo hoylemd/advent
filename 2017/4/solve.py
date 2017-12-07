@@ -2,26 +2,25 @@ import argparse
 
 parser = argparse.ArgumentParser(description='solve an advent  puzzle')
 parser.add_argument('path', type=str, help='path to the input file')
-parser.add_argument('--part_2', '-2', action='store_true',
-                    help='part 2 flag')
 
 
 def validate(phrase):
-    """ensure contains no duplicate words"""
+    """ensure contains no duplicate anagrams"""
     seen_words = {}
     words = phrase.split()
 
     for word in words:
+        dorw = ''.join(sorted(word))
         try:
-            if seen_words[word]:
+            if seen_words[dorw]:
                 return False
         except KeyError:
-            seen_words[word] = True
+            seen_words[dorw] = True
 
     return True
 
 
-def solve(phrases, part_2=False):
+def solve(phrases):
     """Implement solution here"""
     n_valid = 0
     for phrase in phrases:
@@ -36,7 +35,7 @@ def main():
     with open(args.path) as fp:
         phrases = fp.readlines()
 
-    print(solve(phrases, part_2=args.part_2))
+    print(solve(phrases))
 
 
 if __name__ == '__main__':
