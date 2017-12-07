@@ -7,24 +7,22 @@ parser.add_argument('--part_2', '-2', action='store_true',
 
 
 def validate(phrase):
-    pass
+    """ensure contains no duplicate words"""
+    return False
 
 
-def solve(data, part_2=False):
+def solve(phrases, part_2=False):
     """Implement solution here"""
-    return data
+    return len(phrase for phrase in phrases if validate(phrase))
 
 
 def main():
     args = parser.parse_args()
 
     with open(args.path) as fp:
-        lines = fp.readlines()
+        phrases = fp.readlines()
 
-    # process input here
-    data = '\n'.join(lines)
-
-    print(solve(data, part_2=args.part_2))
+    print(solve(phrases, part_2=args.part_2))
 
 
 if __name__ == '__main__':

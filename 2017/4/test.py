@@ -1,23 +1,16 @@
-from solve import solve
-
-
-def io_test(*args, **kwargs):
-    result = solve(*args, **kwargs)
-
-    return result
-
+from solve import validate
 
 tests = {
-    'test_center': (io_test, 0, [1], None),
-    'test_adjecent': (io_test, 1, [4], None),
-    'test_side': (io_test, 3, [12], None),
-    'test_corner': (io_test, 4, [13], None),
-    'test_last': (io_test, 6, [49], None),
-    'test_first': (io_test, 3, [10], None)
+    'first': (validate, True, ['aa bb cc dd ee']),
+    'second': (validate, False, ['aa bb cc dd aa']),
+    'third': (validate, True, ['aa bb cc dd aaa']),
 }
 
 
-def compose_result(result, expected):
+def compose_result(result, expected=None):
+    if expected is None:
+        expected = True
+
     if result == expected:
         return 'Pass'
 
@@ -29,13 +22,12 @@ def compose_result(result, expected):
 
 def main():
     for label, spec in tests.items():
-        test, expected, args, kwargs = spec
+        test, expected, args = spec
         args = args or []
-        kwargs = kwargs or {}
 
         print('{}: {}'.format(
             label,
-            compose_result(test(*args, **kwargs), expected)
+            compose_result(test(*args), expected)
         ))
 
 
