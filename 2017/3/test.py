@@ -21,11 +21,12 @@ def count_it_up(max=50, min=1):
 
 
 tests = {
-    'test_1': (io_test, 0, [1], None),
-    'test_4': (io_test, 1, [4], None),
-    'test_12': (io_test, 3, [12], None),
-    'test_23': (io_test, 2, [23], None),
-    'test_1024': (io_test, 31, [1024], None),
+    'test_center': (io_test, 0, [1], None),
+    'test_adjecent': (io_test, 1, [4], None),
+    'test_side': (io_test, 3, [12], None),
+    'test_corner': (io_test, 4, [13], None),
+    'test_last': (io_test, 6, [49], None),
+    'test_first': (io_test, 3, [10], None)
     # 'count_em_up': (count_it_up, None, None, None),
 }
 
