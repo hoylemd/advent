@@ -1,56 +1,37 @@
-from solve import solve
-
-
-def io_test(*arguments):
-    result = solve(*arguments)
-
-    return result
-
-
-tests = {
-    'example': (sorted, ['one', 'two', 'three'], ['one', 'three', 'two']),
-}
+# from solve import solve
+# Switch comments to turn on
+solve = sorted
 
 test_cases = {
-    sorted: (
+    solve: (
         ("hello", ['e', 'h', 'l', 'l', 'o'],),
-        ([2, -3, 12, 1], [-3, 1, 2, 12],),
+        ([2, -3, 12, 11], [-3, 1, 2, 12],),
     )
 }
 
 
-def compose_result(result, expected=None):
-    if expected is None:
-        expected = True
-
-    if result == expected:
-        return 'Pass'
-
-    return (
-        'Fail: actual: {result}, expected: {expected}'
+def compose_result(outcome, result, expected=None):
+    """Translate test outputs into result message"""
+    return 'Pass' if outcome else (
+        "Fail: act: {result}, exp: {expected}"
         .format(result=result, expected=expected)
     )
 
 
-def _is_str_or_noniterable(obj):
-    if isinstance(obj, str):
-        return True
+def execute_test(label, test, expected=None, *args):
+    """Runs the test method, and formats a test report"""
 
-    try:
-        iter(obj)
-    except TypeError:
-        return True
+    result = test(*args)
+    outcome = False
 
-    return False
-
-
-def execute_test(label, test, expected=None, arguments=[]):
-    if not isinstance(arguments, tuple):
-        arguments = (arguments,)
+    if expected is True and result:
+        outcome = True
+    elif result == expected:
+        outcome = True
 
     return '{}: {}'.format(
         label,
-        compose_result(test(*arguments), expected)
+        compose_result(outcome, result, expected),
     )
 
 
@@ -71,7 +52,6 @@ def run_test_cases(test_cases):
 
 
 def main():
-    run_tests(tests)
     run_test_cases(test_cases)
 
 
