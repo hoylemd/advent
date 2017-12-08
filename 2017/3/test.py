@@ -4,7 +4,7 @@ solve = sorted
 
 test_cases = {
     solve: (
-        ("hello", ['e', 'h', 'l', 'l', 'o'],),
+        ('hello', ['e', 'h', 'l', 'l', 'o'],),
         ([2, -3, 12, 11], [-3, 1, 2, 12],),
     )
 }
@@ -18,7 +18,7 @@ def compose_result(outcome, result, expected=None):
     )
 
 
-def execute_test(label, test, expected=None, *args):
+def execute_test(test, expected=None, *args):
     """Runs the test method, and formats a test report"""
 
     result = test(*args)
@@ -30,25 +30,17 @@ def execute_test(label, test, expected=None, *args):
         outcome = True
 
     return '{}: {}'.format(
-        label,
+        '{}{}'.format(test.__name__, args),  # sorted('hello')
         compose_result(outcome, result, expected),
     )
 
 
-def run_tests(tests):
-    for label, spec in tests.items():
-        test, arguments, expected = spec
-        arguments = arguments or tuple()
-
-        print(execute_test(label, test, expected, arguments))
-
-
 def run_test_cases(test_cases):
     for test, cases in test_cases.items():
-        for arguments, expected in cases:
-            label = '{}({})'.format(test.__name__, arguments)
-
-            print(execute_test(label, test, expected, arguments))
+        # Split off the last arg, it's the expected output
+        case_args = ((case[:-1], case[-1],) for case in cases)
+        for arguments, expected in case_args:
+            print(execute_test(test, expected, *arguments))
 
 
 def main():
