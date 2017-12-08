@@ -9,7 +9,7 @@ def io_test(*arguments):
 
 test_cases = {
     solve: (
-        ([0, 3, 0, 1, -3], 5),
+        ([0, 3, 0, 1, -3], 10),
     )
 }
 

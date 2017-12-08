@@ -9,7 +9,7 @@ def solve(instructions):
 
     while ip > -1 and ip < len(instructions):
         offset = instructions[ip]
-        instructions[ip] += 1
+        instructions[ip] += -1 if offset > 2 else 1
         ip += offset
         fc += 1
 
