@@ -1,11 +1,15 @@
-# from solve import solve
+from solve import solve
 # Switch comments to turn on
-solve = sorted
+# solve = sorted
 
 test_cases = {
     solve: (
-        ('hello', ['e', 'h', 'l', 'l', 'o'],),
-        ([2, -3, 12, 11], [-3, 1, 2, 12],),
+        (1, 0),
+        (2, 1),
+        (12, 3),
+        (13, 4),
+        (49, 6),
+        (10, 3),
     )
 }
 
@@ -20,7 +24,6 @@ def compose_result(outcome, result, expected=None):
 
 def execute_test(test, expected=None, *args):
     """Runs the test method, and formats a test report"""
-
     result = test(*args)
     outcome = False
 
