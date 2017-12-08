@@ -7,14 +7,9 @@ def io_test(*arguments):
     return result
 
 
-tests = {
-    'example': (sorted, ['one', 'two', 'three'], ['one', 'three', 'two']),
-}
-
 test_cases = {
-    sorted: (
-        ("hello", ['e', 'h', 'l', 'l', 'o'],),
-        ([2, -3, 12, 1], [-3, 1, 2, 12],),
+    solve: (
+        ([0, 3, 0, 1, -3], 5),
     )
 }
 
@@ -32,18 +27,6 @@ def compose_result(result, expected=None):
     )
 
 
-def _is_str_or_noniterable(obj):
-    if isinstance(obj, str):
-        return True
-
-    try:
-        iter(obj)
-    except TypeError:
-        return True
-
-    return False
-
-
 def execute_test(label, test, expected=None, arguments=[]):
     if not isinstance(arguments, tuple):
         arguments = (arguments,)
@@ -52,14 +35,6 @@ def execute_test(label, test, expected=None, arguments=[]):
         label,
         compose_result(test(*arguments), expected)
     )
-
-
-def run_tests(tests):
-    for label, spec in tests.items():
-        test, arguments, expected = spec
-        arguments = arguments or tuple()
-
-        print(execute_test(label, test, expected, arguments))
 
 
 def run_test_cases(test_cases):
@@ -71,7 +46,6 @@ def run_test_cases(test_cases):
 
 
 def main():
-    run_tests(tests)
     run_test_cases(test_cases)
 
 

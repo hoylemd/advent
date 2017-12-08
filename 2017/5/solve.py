@@ -1,26 +1,28 @@
 import argparse
 
-parser = argparse.ArgumentParser(description='solve an advent  puzzle')
+parser = argparse.ArgumentParser(description='solve an advent puzzle')
 parser.add_argument('path', type=str, help='path to the input file')
-parser.add_argument('--part_2', '-2', action='store_true',
-                    help='part 2 flag')
 
 
-def solve(data, part_2=False):
-    """Implement solution here"""
-    return data
+def solve(instructions):
+    fc, ip = 0, 0
+
+    while ip > -1 and ip < len(instructions):
+        offset = instructions[ip]
+        instructions[ip] += 1
+        ip += offset
+        fc += 1
+
+    return fc
 
 
 def main():
     args = parser.parse_args()
 
     with open(args.path) as fp:
-        lines = fp.readlines()
+        instructions = [int(line) for line in fp.readlines()]
 
-    # process input here
-    data = '\n'.join(lines)
-
-    print(solve(data, part_2=args.part_2))
+    print(solve(instructions))
 
 
 if __name__ == '__main__':
