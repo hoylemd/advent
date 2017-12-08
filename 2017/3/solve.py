@@ -11,101 +11,118 @@ def odd(n):
 
 
 class Ring:
-    def __init__(self, index):
-        self.index = index
-        self.diameter = self._diameter()
-        self.radius = self._radius()
-        self.max = self._max()
-        self.min = self._min()
+    def __init__(self, radius=0, previous=None):
+        self.radius = radius
+        self.sectors = []
+        self.filled_sectors = 0
 
-    def _diameter(self):
-        return odd(self.index)
+        self.previous = previous
+        self.next = None
 
-    def _radius(self):
-        return int(self.diameter / 2)
+    @property
+    def diameter(self):
+        return odd(self.radius)
 
-    def _max(self):
+    @property
+    def max(self):
         return self.diameter ** 2
 
-    def _min(self):
-        if self.index > 0:
-            return get_ring(self.index - 1).max
-        return 0
+    @property
+    def min(self):
+        return Ring(self.radius - 1).max
+
+    @property
+    def last_sector(self):
+        return self.sectors[-1]
 
     def __len__(self):
         return self.max - self.min
 
+    def get_corner(self, index):
+        if index == -1:
+            return self.sectors[-1]
+
+        corner_mod = self.radius * 2
+        offset_from_end = corner_mod * (3 - index)
+        return self.sectors[-1 - offset_from_end]
+
+    def get_adjacent_sectors_to_upper_ring_sector(self, sector):
+        if sector.is_corner:
+            # figure out which corner, same one as this
+            from_end = sector.ring.max - sector.address
+            corner_mod = sector.ring.radius * 2
+            corner_n = 3 - int(from_end / corner_mod)
+            return [self.get_corner(corner_n)]
+        elif sector.d_from_corner == 1:
+
+
+
+        if sector.offset = 0:
+            return [self.sectors[-1], self.sectors[0]]
+        if sector.offset = 1:
+            return [self.sectors[-1], self.sectors[0], self.sectors[1]]
+
+
+
+    def next_sector(self):
+        index = self.filled_sectors
+        self.filled_sectors += 1
+        address = self.min + self.current_sector
+
+        try:
+            last = self.sectors[-1]
+            value = last.value
+            if last.is_corner:
+                value += self.sectors[-2].value
+        except IndexError:
+            # Nothing from this ring
+            value = 0
+
+        sector = Sector(self, index, self.min + self.filled_sectors, value)
+        self.sectors.append(sector)
+
+        return sector
+
     def get_sector_from_address(self, address):
         offset = address - self.min
-        if offset < 0 or offset > len(self):
+        if offset < 0:
+            if self.previous:
+                return self.previous.get_sector_from_address(address)
             raise IndexError()
 
-        period = self.index * 2
-        try:
-            offset = offset % period
-        except ZeroDivisionError:
-            return 0
+        if offset > len(self):
+            if self.next:
+                return self.next.get_sector_from_address(address)
+            raise IndexError()
 
-        return abs(offset - self.index)
-
-
-rings = [Ring(0)]
+        return self.sectors[offset]
 
 
-def get_ring(index):
-    try:
-        ring = rings[index]
-    except IndexError:
-        for i in range(len(rings), index):
-            rings.append(Ring(i))
-        rings.append(Ring(index))
-        return rings[-1]
-    return ring
-
-
-class Address:
-    def __init__(self, address):
+class Sector:
+    def __init__(self, ring, offset, address, value):
+        self.ring = ring
+        self.offset = offset
         self.address = address
+        self.value = value
 
-        self.ring = get_ring(0)
-        while self.ring.max < self.address:
-            self.ring = get_ring(self.ring.index + 1)
+    @property
+    def d_from_corner(self):
+        d_from_max = self.ring.max - self.address
+        corner_mod = self.ring.radius * 2
+        dist = d_from_max % corner_mod
+        if dist > self.ring.radius:
+            dist = corner_mod - dist
+        return dist
 
-        self.track = self._track()
-        self.sector = self._sector()
-        self.manhatten_distance = self._manhatten_distance()
-
-    def _track(self):
-        return self.ring.index
-
-    def _sector(self):
-        return self.ring.get_sector_from_address(self.address)
-
-    def _manhatten_distance(self):
-        return self.track + self.sector
-
-
-def address_to_path_dims(address):
-    """
-    ring = index_of_ring(address)
-
-    d_ring = ring
-
-    offset = (ring_max(ring) - address)
-    radius = ring_width(ring) - 1
-    try:
-        from_corner = offset % radius
-    except ZeroDivisionError:
-        from_corner = 0
-    d_spoke = from_corner - ring
-    return d_ring, d_spoke
-    """
-    pass
+    @property
+    def is_corner(self):
+        """True if this sector is a corner"""
+        return self.d_from_corner == 0
 
 
 def solve(address, part_2=False):
     """Implement solution here"""
-    return Address(address).manhatten_distance
+    ring = Ring(0)
 
 
 def main():
