@@ -1,16 +1,16 @@
-from solve import solve
+from solve import solve, Disk
 # Switch comments to turn on
 # solve = sorted
 
 test_cases = {
     solve: (
-    #    (1, 0),
-    #    (2, 1),
+        (1, 0),
+        (2, 1),
         (12, 3),
-    #    (13, 4),
-    #    (49, 6),
-    #    (10, 3),
-    )
+        (13, 4),
+        (49, 6),
+        (10, 3),
+    ),
 }
 
 

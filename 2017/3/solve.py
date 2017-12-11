@@ -1,17 +1,16 @@
-from math import sqrt, floor
 import argparse
 
-parser = argparse.ArgumentParser(description='solve an advent  puzzle')
+parser = argparse.ArgumentParser(description='solve an advent puzzle')
 parser.add_argument('path', type=str, help='path to the input file')
 
 
-def vector_wheel(index=0):
+def VectorWheel(index=0):
     """Generator that infinitely rotates through vectors
 
     This could take in a number of dimenions, or even an arbitrary tuple of
     vectors...
     """
-    wheel = ((1, 0), (0, -1), (-1, 0), (0, -1))
+    wheel = ((1, 0), (0, -1), (-1, 0), (0, 1))
     while True:
         yield wheel[index]
         index = (index + 1) % len(wheel)
@@ -21,74 +20,97 @@ def odd(n):
     return 2 * n + 1
 
 
-def print_disk(disk):
-    pass
-
-
 class Disk(list):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, fill=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.append(None)
+        self.direction = (0, 0)
+        self.directions = VectorWheel(0)
+        if fill is not None:
+            self.fill_to(fill)
 
     @property
     def radius(self):
-        if len(self) < 2:
-            return 0
-        #This has something to do with finding odd square roots...
-        return int(floor(sqrt(len(self))))
+        r = 0
+        while (r * 2 + 1) ** 2 < len(self):
+            r += 1
+        return r
+
+    def get_grid(self):
+        radius = self.radius
+        diameter = radius * 2 + 1
+        grid = [[' '] * diameter for _ in range(diameter)]
+        i = 1
+        for x, y in self[1:]:
+            try:
+                grid[y + radius][x + radius] = i
+            except IndexError:
+                pass
+            i += 1
+        return grid
 
     def __str__(self):
-        pass
+        cell_width = len(str(len(self)))
+        cell_format = '{' + ':{}'.format(cell_width) + '}'
 
-    def get_next():
-        pass
+        grid = self.get_grid()
+
+        return '\n'.join(
+            ['|'.join(
+                [cell_format.format(str(cell)) for cell in row]
+            ) for row in grid]
+        )
+
+    def get_next(self):
+        i = len(self)
+        x, y = self[-1]
+        dx, dy = self.direction
+        x, y = x + dx, y + dy
+
+        coords = (x, y,)
+        self.append(coords)
+        time_to_turn = (
+            abs(x * dx) + abs(y * dy) >= self.radius  # time to turn
+            and not (i == odd(self.radius) ** 2)  # unless we just squared
+        )
+        if time_to_turn or (dx == 0 and dx == 0):
+            self.direction = next(self.directions)
+
+        return coords
+
+    def fill_to(self, address):
+        while len(self) <= address:
+            self.get_next()
 
     def __len__(self):
         return super().__len__() - 1
 
 
 def solve(address):
-    """Implement solution here"""
-    disk = Disk()
-    # The None acts as padding so that addresses are equal to indexes
-    x, y = 0, 0
-    dx, dy = 0, 0
-    vectors = vector_wheel(0)
-    turns_left = 0
-    radius = -1
-    for i in range(1, address + 1):
-        x, y = x + dx, y + dy
-        disk.append([x, y])
-        step = '{}: {} (r={}, d.r={})'.format(i, disk[-1], radius, disk.radius)
+    radius = 0
 
-        if (
-            abs(x * dx) + abs(y * dy) > radius  # if it's time to turn
-            and not address == odd(radius) ** 2  # except if we just squared
-        ):
-            step += ', turning'
-            dx, dy = next(vectors)
-            if turns_left == 0:
-                step += ', expanding'
-                radius += 1
-            turns_left = (turns_left - 1) % 5  # could move into class w wheel
+    while odd(radius) ** 2 < address:
+        radius += 1
 
-        print(step)
+    side = odd(radius)
+    try:
+        from_end = ((side ** 2) - address) % (side - 1)
+    except ZeroDivisionError:
+        from_end = 0
 
-    print_disk(disk)
+    if from_end > radius:
+        return from_end
 
-    return abs(x) + abs(y)
+    return (radius - from_end) + radius
 
 
 def main():
     args = parser.parse_args()
 
     with open(args.path) as fp:
-        lines = fp.readlines()
+        val = int(fp.read())
 
-    # process input here
-    data = '\n'.join(lines)
-
-    print(solve(data))
+    print(solve(val))
 
 
 if __name__ == '__main__':
