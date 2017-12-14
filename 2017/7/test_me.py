@@ -2,7 +2,7 @@ from main import first_puzzle, second_puzzle, Program
 
 
 def test_first():
-    """Should return length 'tknk'"""
+    """Should return 'tknk'"""
     example = (
         'pbga (66)',
         'xhth (57)',
@@ -26,10 +26,10 @@ def test_from_shout():
     """Should return a Program and list of subprocess names"""
     shout = 'fwft (72) -> ktlj, cntj, xhth'
 
-    program, subprogram_names = Program.from_shout(shout)
+    program, child_names = Program.from_shout(shout)
     assert program.name == 'fwft'
     assert program.weight == 72
-    assert subprogram_names == ['ktlj', 'cntj', 'xhth']
+    assert child_names == ['ktlj', 'cntj', 'xhth']
 
 
 if second_puzzle != first_puzzle:
