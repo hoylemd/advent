@@ -1,9 +1,25 @@
+#!/usr/bin/env python
+
+
 def realloc(battery):
     """Rebalance a memory battery
 
     :param list battery: The battery to rebalance
     :returns list: the rebalanced battery
     """
+    blocks = max(battery)
+    i = battery.index(blocks)
+    battery[i] = 0
+
+    d_blocks = blocks % len(battery)
+    common_blocks = (blocks - d_blocks) / len(battery)
+    battery = [c_blocks + common_blocks for c_blocks in battery]
+
+    while d_blocks:
+        i = (i + 1) % len(battery)
+        battery[i] += 1
+        d_blocks -= 1
+
     return battery
 
 
@@ -24,7 +40,7 @@ def count_rebalances(battery):
 
 def main():
     with open('input.txt') as fp:
-        battery = fp.read().split()
+        battery = [int(string) for string in fp.read().split()]
 
     print(count_rebalances(battery))
 
