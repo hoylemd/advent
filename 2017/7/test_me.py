@@ -1,4 +1,4 @@
-from main import first_puzzle, second_puzzle
+from main import first_puzzle, second_puzzle, Program
 
 
 def test_first():
@@ -22,9 +22,19 @@ def test_first():
     assert first_puzzle(example) == 'tknk'
 
 
-def test_second():
-    """Should return length 5"""
-    example = 'world'
+def test_from_shout():
+    """Should return a Program and list of subprocess names"""
+    shout = 'fwft (72) -> ktlj, cntj, xhth'
 
-    if second_puzzle != first_puzzle:
+    program, subprogram_names = Program.from_shout(shout)
+    assert program.name == 'fwft'
+    assert program.weight == 72
+    assert subprogram_names == ['ktlj', 'cntj', 'xhth']
+
+
+if second_puzzle != first_puzzle:
+    def test_second():
+        """Should return length 5"""
+        example = 'world'
+
         assert second_puzzle(example) == 5
