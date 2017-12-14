@@ -38,11 +38,29 @@ def count_rebalances(battery):
     return len(hashmap)
 
 
+def size_loop(battery):
+    """Determine how long until a battery config repeats
+
+    :param list battery: The memory battery to balance
+    :returns int: length of the loop
+    """
+    hashmap = {}
+    i = 0
+
+    while hashmap.get(tuple(battery)) is None:
+        hashmap[tuple(battery)] = i
+        battery = realloc(battery)
+        i += 1
+
+    return i - hashmap[tuple(battery)]
+
+
 def main():
     with open('input.txt') as fp:
         battery = [int(string) for string in fp.read().split()]
 
-    print(count_rebalances(battery))
+    print('part 1: {}'.format(count_rebalances(battery[:])))
+    print('part 2: {}'.format(size_loop(battery[:])))
 
 
 if __name__ == '__main__':
