@@ -2,13 +2,21 @@ import fileinput
 
 readings = [int(line.strip()) for line in fileinput.input()]
 
-prev = None
-increases = 0
 
-for reading in readings:
-    if prev is not None:
-        if reading > prev:
-            increases += 1
-    prev = reading
+def calc_windows(readings):
+    for i in range(len(readings) - 2):
+        pass
 
-print(increases)
+
+def count_increases(values):
+    prev = None
+    increases = 0
+    for value in values:
+        if prev is not None:
+            if value > prev:
+                increases += 1
+        prev = value
+
+    return increases
+
+print(count_increases(readings))
