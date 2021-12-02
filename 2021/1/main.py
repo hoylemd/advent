@@ -4,8 +4,11 @@ readings = [int(line.strip()) for line in fileinput.input()]
 
 
 def calc_windows(readings):
+    windows = []
     for i in range(len(readings) - 2):
-        pass
+        windows += [sum(readings[i:i+3])]
+
+    return windows
 
 
 def count_increases(values):
@@ -19,4 +22,5 @@ def count_increases(values):
 
     return increases
 
-print(count_increases(readings))
+
+print(count_increases(calc_windows(readings)))
