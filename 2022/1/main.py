@@ -1,6 +1,6 @@
 import fileinput
 
-def who_has_most_cals(input_lines):
+def cals_by_elf(input_lines):
     sums = []
     so_far = 0
     for line in input_lines:
@@ -13,8 +13,8 @@ def who_has_most_cals(input_lines):
 
     sums.append(so_far) # last elf
 
-    return max(sums)
+    return sums
 
 if __name__ == '__main__':
     input_lines = [line.strip() for line in fileinput.input()]
-    print(who_has_most_cals(input_lines))
+    print(max(cals_by_elf(input_lines)))
