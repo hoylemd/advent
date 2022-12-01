@@ -17,4 +17,6 @@ def cals_by_elf(input_lines):
 
 if __name__ == '__main__':
     input_lines = [line.strip() for line in fileinput.input()]
-    print(max(cals_by_elf(input_lines)))
+    cal_counts = sorted(cals_by_elf(input_lines), reverse=True)
+    top_3 = cal_counts[0:3]
+    print(sum(top_3))
