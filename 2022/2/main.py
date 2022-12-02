@@ -3,26 +3,33 @@ import fileinput
 def parse_input():
     return (line.strip().split(' ') for line in fileinput.input())
 
-# A, X = rock; B, Y = paper; C, Z = scissors
-SCORE_MAP = {
-    ('A', 'X'): 3,
-    ('A', 'Y'): 6,
-    ('A', 'Z'): 0,
-    ('B', 'X'): 0,
-    ('B', 'Y'): 3,
-    ('B', 'Z'): 6,
-    ('C', 'X'): 6,
-    ('C', 'Y'): 0,
-    ('C', 'Z'): 3
+# A = rock; B = paper; C = scissors
+# X = lose; Y = draw; Z = win
+OUTCOME_MAP = {
+    ('A', 'X'): 'scissors',
+    ('A', 'Y'): 'rock',
+    ('A', 'Z'): 'paper',
+    ('B', 'X'): 'rock',
+    ('B', 'Y'): 'paper',
+    ('B', 'Z'): 'scissors',
+    ('C', 'X'): 'paper',
+    ('C', 'Y'): 'scissors',
+    ('C', 'Z'): 'rock'
 }
 SHAPE_MAP = {
-    'X': 1,
-    'Y': 2,
-    'Z': 3
+    'rock': 1,
+    'paper': 2,
+    'scissors': 3
+}
+OUTCOME_SCORE_MAP = {
+    'X': 0,
+    'Y': 3,
+    'Z': 6
 }
 
-def score_round(them, me):
-    return (SCORE_MAP[them, me], SHAPE_MAP[me])
+def score_round(them, outcome):
+    my_throw = OUTCOME_MAP[them, outcome]
+    return (OUTCOME_SCORE_MAP[outcome], SHAPE_MAP[my_throw])
 
 
 if __name__ == '__main__':
