@@ -4,15 +4,9 @@ def parse_input():
     return (line.strip() for line in fileinput.input())
 
 
-def find_dupe(line):
-    """find the duplicate item"""
-    # split in half
-    radix = int(len(line) / 2)
-    first, second = line[0:radix], line[radix:]
-    # print(f"{line}")
-    # print(f"{first} {second}")
-    # find the intersect
-    return set(first).intersection(set(second)).pop()
+def find_badge(first, second, third):
+    """find the common element"""
+    return set(first).intersection(set(second)).intersection(set(third)).pop()
 
 
 def prioritize(item):
@@ -29,9 +23,13 @@ if __name__ == '__main__':
     lines = parse_input()
 
     sum = 0
+    group = []
     for line in lines:
-        dupe = find_dupe(line)
-        sum += prioritize(dupe)
+        group.append(line)
+        if len(group) == 3:
+            badge = find_badge(*group)
+            sum += prioritize(badge)
+            group = []
 
     print(sum)
         
