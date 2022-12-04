@@ -23,6 +23,7 @@ def parse_input():
 
 
 def check_bounds(outer, inner):
+    # not used
     return outer[0] <= inner[0] and outer[1] >= inner[1]
 
 
@@ -31,12 +32,21 @@ def do_overlap(first, second):
         return True
 
 
+def is_disjoint(first, second):
+    # not used
+    if second[0] < first[0]:
+        return is_disjoint(second, first)
+
+    if second[0] > first[1]:
+        return True
+
+
 if __name__ == '__main__':
     lines = parse_input()
 
     overlaps = 0
     for line in lines:
-        delta = 1 if do_overlap(*line) else 0
+        delta = 0 if is_disjoint(*line) else 1
 
         debug(f"{line}{' - overlap' if delta else ''}")
 
