@@ -21,6 +21,7 @@ def prioritize(item):
 
     return ascii_val - offset
 
+
 if __name__ == '__main__':
     lines = parse_input()
 
