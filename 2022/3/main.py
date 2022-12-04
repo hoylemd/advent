@@ -1,5 +1,6 @@
 import fileinput
 
+
 def parse_input():
     return (line.strip() for line in fileinput.input())
 
@@ -15,9 +16,10 @@ def prioritize(item):
     ascii_val = ord(item)
 
     if ascii_val < offset:  # it's capital
-        offset = 38 # -64 to nullify ascii offset, +26 to be above lcase = 38
+        offset = 38  # -64 to nullify ascii offset, +26 to be above lcase = 38
 
     return ascii_val - offset
+
 
 if __name__ == '__main__':
     lines = parse_input()
@@ -32,4 +34,3 @@ if __name__ == '__main__':
             group = []
 
     print(sum)
-        
