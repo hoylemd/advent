@@ -61,9 +61,9 @@ def execute_program(state, instructions):
         n, src, dest = parse_instruction(inst)
 
         debug(f"move {n} cr8s from {src} to {dest}")
-        for i in range(n):
-            crate = state[src-1].pop()
-            state[dest-1].append(crate)
+        gripped = state[src-1][-n:]
+        state[src-1] = state[src-1][0:-n]
+        state[dest-1] = state[dest-1] + gripped
 
         debug(state)
 
