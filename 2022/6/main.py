@@ -20,13 +20,13 @@ def is_sopm(frame):
     return yesno
 
 
-
 def find_next_packet(stream):
-    i = 3
+    frame_size=13 # (+1), it's 14
+    i = frame_size
     buffer = ''
 
     while i < len(stream):
-        if is_sopm(stream[i-3:i+1]):
+        if is_sopm(stream[i-frame_size:i+1]):
             break
         i += 1
 
