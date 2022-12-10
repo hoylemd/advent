@@ -17,16 +17,27 @@ def parse_input():
         yield parts[0], int(parts[1])
 
 
+LINE_WIDTH = 40
+
+
 class Device:
     def __init__(self):
         self.X = 1
         self.cycle = 0
-        self.X_history = {}
+        self.lines = [[]]
+        self.line = self.lines[0]
 
     def exec_cycle(self):
+        # draw pixel
+        x_targ = self.cycle % 40
+        self.line.append('#' if abs(x_targ - self.X) < 2 else '.')
+
+        # go to next row
+        if x_targ == LINE_WIDTH - 1:
+            self.lines.append([])
+            self.line = self.lines[-1]
+
         self.cycle += 1
-        if (self.cycle + 20) % 40 == 0:
-            self.X_history[self.cycle] = self.X
 
     def execute(self, program):
         for op, arg in program:
@@ -38,12 +49,8 @@ class Device:
                 self.exec_cycle()
                 self.X += arg
 
-    def sum_interesting(self):
-        total = 0
-        for c, v in self.X_history.items():
-            total += c * v
-
-        return total
+    def render(self):
+        return '\n'.join(''.join(c for c in line) for line in self.lines)
 
 
 if __name__ == '__main__':
@@ -51,5 +58,4 @@ if __name__ == '__main__':
 
     dev.execute(parse_input())
 
-    debug(dev.X_history)
-    print(dev.sum_interesting())
+    print(dev.render())
