@@ -11,9 +11,6 @@ def info(*args):
 def debug(*args):
     if DEBUG: print(*args)
 
-# TODO add basic logging
-# TODO autopep8
-
 
 def parse_input():
     return (line.strip() for line in fileinput.input())
