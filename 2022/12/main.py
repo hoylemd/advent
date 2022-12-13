@@ -130,7 +130,7 @@ class Map:
         dist = self.distance[y][x]
         return 'inf' if dist == INFINITY else dist
 
-    def get_neighbors(self, x, y):
+    def get_neighbors(self, x, y, hop_criteria):
         height = self.map[y][x]
         neighbors = []
         for dir, mask in dir_masks.items():
@@ -139,7 +139,7 @@ class Map:
             if not self.valid_coords(nx, ny):
                 continue
             n_height = self.map[ny][nx]
-            if n_height - height < 2 and not self.visited[ny][nx]:
+            if hop_criteria(n_height - height) and not self.visited[ny][nx]:
                 neighbors.append((nx, ny))
 
         return neighbors
@@ -149,8 +149,14 @@ class Map:
         for x, y in neighbors:
             self.set_distance(x, y, n_dist)
 
-    def djikstra(self):
-        current_node = self.start
+    def hop_up(self, diff):
+        return diff < 2
+
+    def hop_down(self, diff):
+        return diff > -2
+
+    def djikstra(self, start, end_check, hop_criteria, offset):
+        current_node = start
         self.mark_visited(*current_node)
         self.set_distance(*current_node, 0)
         known = []
@@ -162,8 +168,8 @@ class Map:
         def r_known(x, y):
             return f"({x},{y}):{self.get_distance(x, y)}"
 
-        while not self.is_visited(*self.end):
-            neighbors = self.get_neighbors(*current_node)
+        while not end_check(*current_node):
+            neighbors = self.get_neighbors(*current_node, hop_criteria)
             self.consider_neighbors(neighbors, self.get_distance(*current_node))
             logger.debug(f"curr: {r_known(*current_node)}")
             logger.debug(f"knew: {' '.join(r_known(*k) for k in known)}")
@@ -185,13 +191,24 @@ class Map:
             logger.debug(self.print_distance())
             logger.debug('')
 
-        return self.distance[self.end[1]][self.end[0]]
+        return self.distance[self.end[1]][self.end[0]] + offset
 
     def render_line(self, line):
         return ''.join(itoa(c) for c in line)
 
     def __str__(self):
         return '\n'.join(self.render_line(row) for row in self.map)
+
+    def is_end_tile_visited(self, x, y):
+        return self.is_visited(*self.end)
+
+    def is_on_a_tile(self, x, y):
+        return self.map[y][x] == 0
+
+    def for_part(self, part):
+        return {
+            'part 1': (self.start, self.is_end_tile_visited, self.hop_up, 0)
+        }[part]
 
 
 if __name__ == '__main__':
@@ -200,4 +217,4 @@ if __name__ == '__main__':
     logger.info(map)
     logger.debug('')
 
-    print(f"answer:\n{map.djikstra()}")
+    print(f"answer:\n{map.djikstra(*map.for_part('part 1'))}")
