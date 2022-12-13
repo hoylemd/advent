@@ -1,6 +1,5 @@
 import fileinput
 import logging
-from collections import defaultdict
 
 
 LOG_LEVEL = 'INFO'
@@ -23,10 +22,18 @@ def itoa(integer):
     return chr(integer + ord('a'))
 
 
+INFINITY = 9_999_999_999
 LEFT = '<'
 UP = '^'
 RIGHT = '>'
 DOWN = 'V'
+
+dir_masks = {
+    LEFT: (-1, 0),
+    UP: (0, -1),
+    RIGHT: (1, 0),
+    DOWN: (0, 1)
+}
 
 
 class Map:
@@ -34,24 +41,30 @@ class Map:
         self.start = None
         self.end = None
         self.pos = None
-        self.map = [self.parse_line(line, y) for y, line in enumerate(lines)]
+        self.map, self.visited, self.distance = self.parse(lines)
         self.steps = []
-        self.bad_dirs = defaultdict(list)
 
-    def parse_line(self, line, y):
-        row = []
-        for x, c in enumerate(line):
-            if c == 'S':  # start found
-                self.start = (x, y)
-                self.pos = self.start
-                c = 'a'
-            if c == 'E':  # end found
-                self.end = (x, y)
-                c = 'z'
+    def parse(self, lines):
+        map, visited, distance = [], [], []
+        for y, line in enumerate(lines):
+            m_row, v_row, d_row = [], [], []
+            for x, c in enumerate(line):
+                if c == 'S':  # start found
+                    self.start = (x, y)
+                    self.pos = self.start
+                    c = 'a'
+                if c == 'E':  # end found
+                    self.end = (x, y)
+                    c = 'z'
 
-            row.append(atoi(c))
+                m_row.append(atoi(c))
+                v_row.append(False)
+                d_row.append(INFINITY)
+            map.append(m_row)
+            visited.append(v_row)
+            distance.append(d_row)
 
-        return row
+        return map, visited, distance
 
     def valid_coords(self, x, y):
         if x < 0 or y < 0:
@@ -63,126 +76,116 @@ class Map:
 
         return True
 
-    def coords_from_pos_n_dir(self, pos, dir):
-        if dir == LEFT:
-            next_step = (pos[0] - 1, pos[1])
-        if dir == UP:
-            next_step = (pos[0], pos[1] - 1)
-        if dir == RIGHT:
-            next_step = (pos[0] + 1, pos[1])
-        if dir == DOWN:
-            next_step = (pos[0], pos[1] + 1)
+    def render_visited(self, current_node, known):
+        rows = []
+        for y, row in enumerate(self.visited):
+            r_str = []
+            for x, cell in enumerate(row):
+                pen = '#' if cell else '.'
+                if (x, y) == self.start:
+                    pen = 'S'
+                if (x, y) == self.end:
+                    pen = 'E'
+                if (x, y) in known:
+                    pen = 'o'
+                if (x, y) == current_node:
+                    pen = 'X'
 
-        return next_step if self.valid_coords(*next_step) else None
+                r_str.append(pen)
+            rows.append(''.join(r_str))
+        return rows
 
-    def step(self, dir):
-        next_step = self.coords_from_pos_n_dir(self.pos, dir)
+    def print_visited(self, current_node, known):
+        return '\n'.join(self.render_visited(current_node, known))
 
-        self.steps.append((self.pos, dir))
-        self.pos = next_step
+    def render_distance(self):
+        rows = []
+        for y, row in enumerate(self.distance):
+            r_cells = []
+            for x, cell in enumerate(row):
+                r_cells.append(f"{self.get_distance(x, y):3}")
+            rows.append('|'.join(r_cells))
+        return rows
 
-    def go_back(self):
-        self.pos, bad_dir = self.steps.pop()
-        self.bad_dirs[self.pos].append(bad_dir)
+    def print_distance(self):
+        return '\n'.join(self.render_distance())
 
-    def render_path(self):
-        grid = [
-            ['.' for c in range(len(row))]
-            for row in self.map
-        ]
+    def get_height(self, x, y):
+        return self.map[y][x]
 
-        for coords, dir in self.steps:
-            x, y = coords
-            grid[y][x] = dir
+    def mark_visited(self, x, y):
+        if self.visited[y][x]:
+            raise ValueError
+        self.visited[y][x] = True
 
-        grid[self.start[1]][self.start[0]] = 'S'
-        grid[self.end[1]][self.end[0]] = 'E'
-        grid[self.pos[1]][self.pos[0]] = 'X'
+    def is_visited(self, x, y):
+        return self.visited[y][x]
 
-        return '\n'.join(
-            ''.join(row) for row in grid
-        )
+    def set_distance(self, x, y, dist):
+        c_dist = self.distance[y][x]
+        if dist < c_dist:
+            self.distance[y][x] = dist
 
-    def too_high(self, x, y):
-        here = self.map[self.pos[1]][self.pos[0]]
-        there = self.map[y][x]
-        if there - here < 2:
-            return False
-        return True
+    def get_distance(self, x, y):
+        dist = self.distance[y][x]
+        return 'inf' if dist == INFINITY else dist
 
-    def greedy_directions(self):
-        dx = self.end[0] - self.pos[0]
-        dy = self.end[1] - self.pos[1]
-
-        dir_order = []
-
-        if abs(dx) > abs(dy):
-            dir_order.append(LEFT if dx < 0 else RIGHT)
-            dir_order.append(UP if dy < 0 else DOWN)
-            dir_order.append(UP if DOWN in dir_order else DOWN)
-            dir_order.append(LEFT if RIGHT in dir_order else RIGHT)
-        elif abs(dy) > abs(dx):
-            dir_order.append(UP if dy < 0 else DOWN)
-            dir_order.append(LEFT if dx < 0 else RIGHT)
-            dir_order.append(LEFT if RIGHT in dir_order else RIGHT)
-            dir_order.append(UP if DOWN in dir_order else DOWN)
-        else:
-            if dx < 0 and dy < 0:
-                dir_order = (LEFT, DOWN, UP, RIGHT)
-            elif dx > 0 and dy < 0:
-                dir_order = (RIGHT, DOWN, UP, LEFT)
-            elif dx < 0 and dy > 0:
-                dir_order = (LEFT, UP, DOWN, RIGHT)
-            else:
-                dir_order = (RIGHT, UP, DOWN, LEFT)
-
-        return dir_order
-
-    def visited(self, x, y):
-        for coords, dir in self.steps[::-1]:
-            if (x, y) == coords:
-                return True
-
-        return False
-
-    def backtracks(self, x, y):
-        return self.visited(x, y) and self.map[y][x] <= self.map[self.pos[1]][self.pos[0]]
-
-    def pick_path(self):
-        ok_dirs = {}
-        next_step = None
-        next_dir = None
-        dirs = self.greedy_directions()
-        logger.debug(f" trying directions {dirs}")
-        for dir in dirs:
-            next_step = self.coords_from_pos_n_dir(self.pos, dir)
-            if next_step is None: continue
-            if self.too_high(*next_step) or self.backtracks(*next_step) or dir in self.bad_dirs[next_step]:
-                next_step = None
+    def get_neighbors(self, x, y):
+        height = self.map[y][x]
+        neighbors = []
+        for dir, mask in dir_masks.items():
+            dx, dy = mask
+            nx, ny = x + dx, y + dy
+            if not self.valid_coords(nx, ny):
                 continue
-            ok_dirs[dir] = self.map[next_step[1]][next_step[0]]
+            n_height = self.map[ny][nx]
+            if n_height - height < 2 and not self.visited[ny][nx]:
+                neighbors.append((nx, ny))
 
-        def get_height(pair):
-            return pair[1]
+        return neighbors
 
-        if ok_dirs:
-            sortd = sorted(ok_dirs.items(), reverse=True, key=get_height)
-            next_dir = sortd[0][0]
-            logger.debug(f"going {next_dir}")
-        return next_dir
+    def consider_neighbors(self, neighbors, c_dist):
+        n_dist = c_dist + 1
+        for x, y in neighbors:
+            self.set_distance(x, y, n_dist)
 
-    def seek_summit(self):
-        while self.pos != self.end:
-            dir = self.pick_path()
-            if dir:
-                self.step(dir)
-            else:
-                self.go_back()
+    def djikstra(self):
+        current_node = self.start
+        self.mark_visited(*current_node)
+        self.set_distance(*current_node, 0)
+        known = []
 
-            logger.debug(self)
-            logger.debug(self.render_path())
+        def get_distance(coords):
+            x, y = coords
+            return self.distance[y][x]
+
+        def r_known(x, y):
+            return f"({x},{y}):{self.get_distance(x, y)}"
+
+        while not self.is_visited(*self.end):
+            neighbors = self.get_neighbors(*current_node)
+            self.consider_neighbors(neighbors, self.get_distance(*current_node))
+            logger.debug(f"curr: {r_known(*current_node)}")
+            logger.debug(f"knew: {' '.join(r_known(*k) for k in known)}")
+            logger.debug(f"neig: {' '.join(r_known(*n) for n in neighbors)}")
+
+            known += neighbors
+
+            known = sorted(known, key=get_distance)
+            known.reverse()
+
+            while self.is_visited(*current_node):
+                current_node = known.pop()
+            self.mark_visited(*current_node)
+
+            logger.debug(f"next: {r_known(*current_node)}")
+            logger.debug(f"know: {' '.join(r_known(*k) for k in known)}")
+            logger.info(self.print_visited(current_node, known))
             logger.debug('')
-            # breakpoint()
+            logger.debug(self.print_distance())
+            logger.debug('')
+
+        return self.distance[self.end[1]][self.end[0]]
 
     def render_line(self, line):
         return ''.join(itoa(c) for c in line)
@@ -195,8 +198,6 @@ if __name__ == '__main__':
     map = Map(parse_input())
 
     logger.info(map)
-    logger.info(map.render_path())
     logger.debug('')
-    map.seek_summit()
 
-    print(f"answer:\n{len(map.steps)}")
+    print(f"answer:\n{map.djikstra()}")
