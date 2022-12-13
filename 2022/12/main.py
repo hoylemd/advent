@@ -191,7 +191,7 @@ class Map:
             logger.debug(self.print_distance())
             logger.debug('')
 
-        return self.distance[self.end[1]][self.end[0]] + offset
+        return self.distance[current_node[1]][current_node[0]] + offset
 
     def render_line(self, line):
         return ''.join(itoa(c) for c in line)
@@ -207,7 +207,8 @@ class Map:
 
     def for_part(self, part):
         return {
-            'part 1': (self.start, self.is_end_tile_visited, self.hop_up, 0)
+            'part 1': (self.start, self.is_end_tile_visited, self.hop_up, 0),
+            'part 2': (self.end, self.is_on_a_tile, self.hop_down, 0)
         }[part]
 
 
@@ -217,4 +218,4 @@ if __name__ == '__main__':
     logger.info(map)
     logger.debug('')
 
-    print(f"answer:\n{map.djikstra(*map.for_part('part 1'))}")
+    print(f"answer:\n{map.djikstra(*map.for_part('part 2'))}")
