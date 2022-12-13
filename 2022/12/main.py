@@ -1,3 +1,4 @@
+from os import environ
 import fileinput
 import logging
 
@@ -207,8 +208,8 @@ class Map:
 
     def for_part(self, part):
         return {
-            'part 1': (self.start, self.is_end_tile_visited, self.hop_up, 0),
-            'part 2': (self.end, self.is_on_a_tile, self.hop_down, 0)
+            '1': (self.start, self.is_end_tile_visited, self.hop_up, 0),
+            '2': (self.end, self.is_on_a_tile, self.hop_down, 0)
         }[part]
 
 
@@ -218,4 +219,4 @@ if __name__ == '__main__':
     logger.info(map)
     logger.debug('')
 
-    print(f"answer:\n{map.djikstra(*map.for_part('part 2'))}")
+    print(f"answer:\n{map.djikstra(*map.for_part(environ['ADVENT_PART']))}")
