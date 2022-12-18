@@ -14,6 +14,15 @@
       "justMyCode": true
     },
     {
+      "name": "Test Advent(go.sh)",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "args": ["${relativeFileDirname}/test.txt"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
       "name": "Guess Advent",
       "type": "python",
       "request": "launch",
