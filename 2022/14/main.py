@@ -18,7 +18,7 @@ class Thing:
         self.origin = (500, 0)
         self.x_bounds = (500, 500)
         self.y_bounds = (0, 0)
-        self.grid = self.parse(lines)
+        self.grid = self.parse(lines, part)
 
     def header_line(self, i, margin=2):
         btwn_l_and_o = (self.origin[0] - self.x_bounds[0]) - 1
@@ -83,14 +83,28 @@ class Thing:
 
         return points
 
-    def parse(self, lines):
+    def parse(self, lines, part=1):
         rocks = [self.parse_rock(line) for line in lines]
 
+        if part > 1:
+            # Add ground lines
+            self.y_bounds = (self.y_bounds[0], self.y_bounds[1] + 2)
+            height = self.y_bounds[1] - self.y_bounds[0]
+            self.x_bounds = (self.origin[0] - height, self.origin[0] + height)
+            logger.debug(
+                f"{self.y_bounds=} {height=} {self.x_bounds=}"
+            )
+
+            # draw da ground
+            rocks.append(
+                self.parse_rock(f"{self.x_bounds[0]},{self.y_bounds[1]} -> {self.x_bounds[1]},{self.y_bounds[1]}")
+            )
+
         # prep grid
-        self.grid = [
-            ['.'] * (self.x_bounds[1] - self.x_bounds[0] + 1)
-            for _ in range(self.y_bounds[1] - self.y_bounds[0] + 1)
-        ]
+        width = (self.x_bounds[1] - self.x_bounds[0] + 1)
+        height = (self.y_bounds[1] - self.y_bounds[0] + 1)
+
+        self.grid = [['.'] * width for _ in range(height)]
 
         # set sand source
         self.set_cell(*self.origin, val='+')
@@ -105,6 +119,7 @@ class Thing:
         """Sim a unit of sand falling
 
         :raises IndexError: if the sand will fall forever
+        :raises ValueError: if the origin gets plugged
         """
         step = (self.sand[0], self.sand[1] + 1)
         if self.get_cell(*step) == '.':
@@ -121,16 +136,21 @@ class Thing:
             self.sand = step
             return
 
-        # if we get here, the sand can't fall, so save it
-        self.set_cell(*self.sand, 'o')
         self.fallen += 1
+
+        # if we get here, the sand can't fall, so save it
+        if self.get_cell(*self.sand) == '+':
+            # unless she bunged up
+            raise ValueError("plugg'd")
+
+        self.set_cell(*self.sand, 'o')
         self.sand = self.origin
 
     def run_simulation(self):
         while True:
             self.simulate_sand()
-            logger.info(self)
-            logger.info('')
+            logger.debug(self)
+            logger.debug('')
 
     def find_steady_state(self):
         self.fallen = 0
@@ -141,13 +161,22 @@ class Thing:
         except IndexError:
             return self.fallen
 
+    def find_plugged_state(self):
+        self.fallen = 0
+        self.sand = self.origin
+
+        try:
+            self.run_simulation()
+        except (IndexError, ValueError):
+            return self.fallen
+
     def answer(self, func, *args, **kwargs):
         return func()
 
     def for_part(self, part=1):
         return {
             1: [self.find_steady_state],
-            2: []
+            2: [self.find_plugged_state]
         }[part]
 
 

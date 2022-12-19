@@ -37,6 +37,7 @@ def num_width(number):
 
     return width
 
+
 def decomp_direction(dir):
     return {
         'L': (-1, 0),
