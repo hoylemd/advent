@@ -38,13 +38,20 @@ def num_width(number):
     return width
 
 
+DIR_MAP = {
+    'L': (-1, 0),
+    'U': (0, 1),
+    'R': (1, 0),
+    'D': (0, -1),
+    '<': (-1, 0),
+    '^': (0, 1),
+    '>': (1, 0),
+    'V': (0, -1)
+}
+
+
 def decomp_direction(dir):
-    return {
-        'L': (-1, 0),
-        'U': (0, 1),
-        'R': (1, 0),
-        'D': (0, -1)
-    }[dir]
+    return DIR_MAP[dir]
 
 
 def reduce_vector(x, y):
@@ -63,3 +70,50 @@ def reduce_vector(x, y):
 
 def vector(start, dest):
     return dest[0] - start[0], dest[1] - start[1]
+
+
+class Point():
+    """A 2-dimensional coordinate
+
+    :param int x: x coordinate
+    :param int y: y coordinate
+
+    Alternatively, pass in one of L,U,R,D,<,^,>,V for a unit vector in that direction
+
+    x and y coordinates can be accessed via the `x` and `y` attributes, or by item
+    indexes 0 and 1 respectively.  Behaves like a 2-tuple coordinate as much as possible
+    """
+    def __init__(self, x, y=None):
+        if isinstance(x, str) and x in DIR_MAP:  # handle directions
+            x, y = DIR_MAP[x]
+
+        self.x = x
+        self.y = y
+
+    def __getitem__(self, key):
+        if key == 0:
+            return self.x
+        if key == 1:
+            return self.y
+
+    def __iter__(self):
+        return iter((self.x, self.y))
+
+    def __str__(self):
+        return f"{self.x},{self.y}"
+
+    def __repr__(self):
+        return f"<Point object({self.x},{self.y})>"
+
+    def vector_to(self, *args):
+        """Given another point (or x,y coordinates), determine the vector to that point
+
+        usage:
+        point.vector_to(x, y)
+        point.vector_to(other_point)
+        """
+        return Point(*vector(self, args))
+
+    def unit(self):
+        """Reduce this point to a unit vector"""
+        return Point(*reduce_vector(*self))
