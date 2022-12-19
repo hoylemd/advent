@@ -16,12 +16,6 @@ class Thing:
     def answer(self, *args, **kwargs):
         return 0
 
-    def for_part(self, part=1):
-        return {
-            1: [],
-            2: []
-        }[part]
-
 
 if __name__ == '__main__':
     part = int(environ.get('ADVENT_PART', 1))
@@ -30,4 +24,4 @@ if __name__ == '__main__':
     logger.info(thing)
     logger.debug('')
 
-    print(f"answer:\n{thing.answer(*thing.for_part(part))}")
+    print(f"answer:\n{thing.answer()}")
