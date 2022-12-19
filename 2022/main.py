@@ -1,42 +1,33 @@
 from os import environ
-import fileinput
-import logging
-
-
-LOG_LEVEL = 'INFO'
-logger = logging.getLogger(__name__)
-logger.setLevel(LOG_LEVEL)
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-logger.addHandler(ch)
-
-
-def parse_input():
-    return (line.strip() for line in fileinput.input())
+from utils import logger, parse_input
 
 
 class Thing:
-    def __init__(self, lines):
-        self.parse(lines)
+    def __init__(self, lines, part):
+        self.part = part
+        self.input = self.parse(lines)
+
+    def __str__(self):
+        return '\n'.join(self.input)
 
     def parse(self, lines):
-        for line in lines:
-            pass
+        return [line for line in lines]
 
     def answer(self, *args, **kwargs):
         return 0
 
-    def for_part(self, part='1'):
+    def for_part(self, part=1):
         return {
-            '1': [],
-            '2': []
+            1: [],
+            2: []
         }[part]
 
 
 if __name__ == '__main__':
-    thing = Thing(parse_input())
+    part = int(environ.get('ADVENT_PART', 1))
+    thing = Thing(parse_input(), part)
 
     logger.info(thing)
     logger.debug('')
 
-    print(f"answer:\n{thing.answer(*thing.for_part(environ['ADVENT_PART']))}")
+    print(f"answer:\n{thing.answer(*thing.for_part(part))}")

@@ -9,4 +9,4 @@ if [[ -z "$part" ]] ; then
 fi
 
 set -x
-ADVENT_PART="$part" python -m pdb $day/main.py $day/$input
+ADVENT_PART="$part" python -m pdb $day.main $day/$input

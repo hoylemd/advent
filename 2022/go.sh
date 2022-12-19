@@ -8,4 +8,4 @@ if [[ -z "$part" ]]; then
   part="1"
 fi
 
-ADVENT_PART="$part" python $day/main.py $day/$input
+ADVENT_PART="$part" python -m $day.main $day/$input
