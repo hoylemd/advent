@@ -1,6 +1,5 @@
 import os
 import logging
-import fileinput
 
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger(__name__)
@@ -10,8 +9,20 @@ ch.setLevel(LOG_LEVEL)
 logger.addHandler(ch)
 
 
-def parse_input():
-    return (line.strip() for line in fileinput.input())
+def _read_file(path):
+    with open(path) as fp:
+        for line in fp.readlines():
+            yield line
+
+
+def parse_input(path=None):
+    if path:
+        genny = _read_file(path)
+    else:
+        import fileinput
+        genny = fileinput.input()
+
+    return (line.strip() for line in genny)
 
 
 def render_line(line, shader=str):
@@ -113,6 +124,12 @@ class Point():
     def __repr__(self):
         return f"<Point object({self.x},{self.y})>"
 
+    def __eq__(self, other):
+        return (self.x, self.y) == other
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
     def vector_to(self, *args):
         """Given another point (or x,y coordinates), determine the vector to that point
 
@@ -121,6 +138,10 @@ class Point():
         point.vector_to(other_point)
         """
         return Point(*vector(self, args))
+
+    def taxi_to(self, *args):
+        """Given another point (or x,y coodinates), determine taxicab distance to that point"""
+        return sum(self.vector_to(*args))
 
     def unit(self):
         """Reduce this point to a unit vector"""
@@ -149,6 +170,45 @@ class Grid:
         if value is not None:
             self.init_grid(value)
 
+        self._header = None
+
+    @classmethod
+    def from_points(cls, points, origin=None):
+        """Take in a bunch of points, compute appropriate origin/offset/dims and make a new Grid for it"""
+        x_bounds = [0, 0]
+        y_bounds = [0, 0]
+
+        if origin is not None:  # if it's specified, include origin
+            points.append(origin)
+
+        for x, y in points:
+            if x < x_bounds[0]:
+                x_bounds[0] = x
+            if x > x_bounds[1]:
+                x_bounds[1] = x
+            if y < y_bounds[0]:
+                y_bounds[0] = y
+            if y > y_bounds[1]:
+                y_bounds[1] = y
+
+        return Grid.from_bounds(x_bounds, y_bounds, origin)
+
+    @classmethod
+    def from_bounds(cls, x_bounds, y_bounds, origin=None):
+        # if no origin, use top-left corner as origin, no offset
+        if origin is None:
+            # if 0,0 within bounds use that
+            if x_bounds[0] <= 0 and x_bounds[1] >= 0 and y_bounds[0] <= 0 and y_bounds[1] >= 0:
+                origin = Point(0, 0)
+            else:
+                origin = Point(x_bounds[0], y_bounds[0])
+
+        offset = (origin.x - x_bounds[0], origin.y - y_bounds[0])
+        dimensions = (x_bounds[1] + 1 - x_bounds[0], y_bounds[1] + 1 - y_bounds[0])
+
+        # else, compute offset s.t. all points + origin included
+        return Grid(dimensions, origin, offset)
+
     @property
     def width(self):
         return self.dimensions.x
@@ -169,6 +229,7 @@ class Grid:
 
     def init_grid(self, value=None):
         """actually create the values object"""
+        self._header = None
         self.values = [
             [value] * self.width
             for _ in range(self.height)
@@ -225,14 +286,13 @@ class Grid:
         except IndexError:
             last_mark = self.origin.x
         # last column
-        breakpoint()
         right = f"{' ' * (self.x_bounds[1] - last_mark - 1)}{get_char(self.x_bounds[1])}"
 
         line = left + inner + right
-        # add origin mark
 
+        # add origin mark
         ox = self.origin.x - self.x_bounds[0]
-        if ox not in marks and ox not in self.x_bounds:
+        if self.origin.x not in marks and self.origin.x not in self.x_bounds:
             line = line[:ox] + get_char(self.origin.x) + line[ox + 1:]
 
         return f"{' ' * margin} {line}"
@@ -248,7 +308,10 @@ class Grid:
 
         grid_lines = [stamp.format(n=i + self.y_bounds[0], line=line) for i, line in enumerate(lines)]
 
-        return '\n'.join(self.header_lines(margin) + grid_lines)
+        if self._header is None:
+            self._header = self.header_lines(margin)
+
+        return '\n'.join(self._header + grid_lines)
 
     def __repr__(self):
         return f"<Grid object(({self.width},{self.height}),origin:({self.origin}),offset:({self.offset})>"

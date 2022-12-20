@@ -1,11 +1,18 @@
 #! /bin/env bash
 
 day=$1
-input=$2
-part=$3
+shift
+input=$1
+shift
+part=$1
+shift
 
 if [[ -z "$part" ]]; then
   part="1"
 fi
 
-ADVENT_PART="$part" python -m $day.main $day/$input
+if [ $day -lt 15 ]; then
+  ADVENT_PART="$part" python -m $day.main $day/$input
+else
+  python -m $day.main $day/$input $part $@
+fi

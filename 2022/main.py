@@ -1,4 +1,4 @@
-from os import environ
+from argparse import ArgumentParser
 from utils import logger, parse_input
 
 
@@ -17,9 +17,14 @@ class Thing:
         return 0
 
 
+arg_parser = ArgumentParser('python -m $N.main $N', description="Advent of Code Day $N")
+arg_parser.add_argument('input_path', help="Path to the input file")
+arg_parser.add_argument('part', type=int, default=1, help="Which part of the challenge to apply.")
+
 if __name__ == '__main__':
-    part = int(environ.get('ADVENT_PART', 1))
-    thing = Thing(parse_input(), part)
+    argus = arg_parser.parse_args()
+
+    thing = Thing(parse_input(argus.input_path), argus.part)
 
     logger.info(thing)
     logger.debug('')
