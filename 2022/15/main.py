@@ -89,7 +89,7 @@ class Thing:
             dist = abs(target_y - sensor.pos.y)
             logger.debug(f"{repr(sensor)}: {dist} from y={target_y}")
             if dist > sensor.range:
-                logger.debug(f"  No overlap.")
+                logger.debug("  No overlap.")
                 continue
 
             overlap = sensor.range - dist
@@ -104,7 +104,7 @@ class Thing:
         for r in ranges:
             logger.debug(f"  {r}")
 
-        return sum(u - l for l, u in ranges)
+        return sum(up - low for low, up in ranges)
 
 
 arg_parser = ArgumentParser('python -m 15.main 15', description="Triangulate Distress Beacons")
