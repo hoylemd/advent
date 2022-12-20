@@ -23,16 +23,12 @@ def simplify_ranges(ranges):
             current = rng
             continue
 
-        logger.debug(f"Comparing {current} vs {rng}")
-        if current[0] <= rng[1] or current[0] <= rng[0] and current[1] >= rng[1]:
+        if current[1] >= rng[0]:
             current = merge_ranges(current, rng)
-            logger.debug(f"  - merged: {current}")
         else:
-            logger.debug(f"pushed {current}, next is {rng}")
             new_ranges.append(current)
             current = rng
 
-    logger.debug(f"pushing final {current}")
     if current: new_ranges.append(current)
 
     return new_ranges
@@ -83,28 +79,51 @@ class Thing:
             self.sensors.append(sensor)
             self.beacons.add(sensor.beacon)
 
-    def answer(self, target_y):
+    def get_beaconless_at_y(self, target_y):
         ranges = []
         for sensor in self.sensors:
             dist = abs(target_y - sensor.pos.y)
-            logger.debug(f"{repr(sensor)}: {dist} from y={target_y}")
             if dist > sensor.range:
-                logger.debug("  No overlap.")
                 continue
 
             overlap = sensor.range - dist
 
             clear_range = (sensor.pos.x - overlap, sensor.pos.x + overlap)
             ranges.append(clear_range)
-            logger.debug(f"  {overlap} of overlap, so range: {clear_range} added")
 
         ranges = simplify_ranges(ranges)
 
-        logger.debug('\nRanges:')
-        for r in ranges:
-            logger.debug(f"  {r}")
+        return ranges
 
-        return sum(up - low for low, up in ranges)
+    def count_beaconless_at_y(self, target_y):
+        beaconless_ranges = self.get_beaconless_at_y(target_y)
+
+        return sum(up - low for low, up in beaconless_ranges)
+
+    def find_sos_frequency(self, minimum, maximum):
+        x, y = 0, 0
+
+        max_bound = max(self.grid.x_bounds[1], self.grid.y_bounds[1])
+        max_bound = min(max_bound, maximum)
+
+        for y in range(minimum, max_bound + 1):
+            if y % 1000 == 0:
+                logger.info(f"Checking row {y}")
+            y_ranges = self.get_beaconless_at_y(y)
+            if len(y_ranges) > 1:
+                break
+        # find x
+        x = y_ranges[0][1] + 1
+
+        logger.info(f"Gap found at {x},{y}")
+
+        return x * maximum + y
+
+    def answer(self, *args):
+        if self.part == 1:
+            return self.count_beaconless_at_y(*args)
+        else:
+            return self.find_sos_frequency(0, 4_000_000)
 
 
 arg_parser = ArgumentParser('python -m 15.main 15', description="Triangulate Distress Beacons")
@@ -120,7 +139,7 @@ if __name__ == '__main__':
 
     logger.info(thing)
     logger.debug('')
-    logger.debug(repr(thing.grid))
+    logger.info(repr(thing.grid))
     if thing.grid.ready:
         logger.info(thing.grid)
 
