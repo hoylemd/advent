@@ -137,11 +137,15 @@ class Point():
         point.vector_to(x, y)
         point.vector_to(other_point)
         """
-        return Point(*vector(self, args))
+        if len(args) == 1 and isinstance(args[0], Point):
+            x, y = args[0]
+        else:
+            x, y = args
+        return Point(*vector(self, (x, y)))
 
     def taxi_to(self, *args):
         """Given another point (or x,y coodinates), determine taxicab distance to that point"""
-        return sum(self.vector_to(*args))
+        return sum(abs(comp) for comp in self.vector_to(*args))
 
     def unit(self):
         """Reduce this point to a unit vector"""
@@ -166,6 +170,7 @@ class Grid:
 
         self.values = []
         self.x_axis_spacing = x_axis_spacing
+        self.ready = False
 
         if value is not None:
             self.init_grid(value)
@@ -234,6 +239,7 @@ class Grid:
             [value] * self.width
             for _ in range(self.height)
         ]
+        self.ready = True
 
     def get(self, x, y=None):
         if y is None and isinstance(x, Point):
