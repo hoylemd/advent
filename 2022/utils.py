@@ -1,21 +1,40 @@
+"""General-purpose helper modules"""
 import os
 import logging
 
+# region === Output stuff ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger(__name__)
 logger.setLevel(LOG_LEVEL)
 ch = logging.StreamHandler()
 ch.setLevel(LOG_LEVEL)
 logger.addHandler(ch)
+# endregion
 
 
+# region === File IO ===
 def _read_file(path):
+    """Just emit lines from a file path
+
+    :param str path: Path to the file to read from
+    :yields str: Lines from the file (WITH trailing newline)
+    """
     with open(path) as fp:
         for line in fp.readlines():
             yield line
 
 
 def parse_input(path=None):
+    """Parse file input into stripped lines.
+
+    If path is provided, will use regular python file reading.
+    Otherwise, uses the fileinput library.
+    Note: if fileinput is used, it will consume *all* command line arguments as file paths!
+    If you need command line arguments, provide a file path.
+
+    :param str path: Path to the file to read from. Optional, will use fileinput if omitted.
+    :yields str: Stripped lines from the file/input
+    """
     if path:
         genny = _read_file(path)
     else:
@@ -23,40 +42,93 @@ def parse_input(path=None):
         genny = fileinput.input()
 
     return (line.strip() for line in genny)
+# endregion
 
 
+# region === Misc ===
+def noop(argument=None):
+    """Single-argument noop, just returns the arg
+
+    Just for when you need an operation but don't actually need to do anything
+
+    :param any argument: An argument to be returned, default None
+    :returns any: The argument passed in
+    """
+    return argument
+
+# endregion
+
+
+# region === Grid rendering ===
 def render_line(line, shader=str):
+    """Render all elements of an array together into a string.
+
+    Used primarily for rendering grid lines.
+    Provide a `shader` callable to mutate the elements before rendering them.
+
+    :param list line: The array of elements to render together
+    :param callable shader: Callable to mutate elements before rendering them together, optional
+
+    :returns str: The rendered line
+    """
     return ''.join(shader(c) for c in line)
 
 
 def render_lines(lines, shader=str):
+    """Pluralizer for render_line.
+
+    see render_line for details
+
+    :param list lines: The array of arrays to be rendered
+    :param callable shader: Callable to mutate elements before rendering them together, optional
+
+    :yields str: The rendered lines
+    """
     return (render_line(line, shader) for line in lines)
 
 
 def render_grid(grid, shader=str):
+    """Render a 2-dimensional array into a single multiline string.
+
+    see render_line for details
+
+    :param list grid: The array of arrays to be rendered
+    :param callable shader: Callable to mutate elements before rendering them together, optional
+
+    :returns str: The rendered grid
+    """
     return '\n'.join(render_lines(grid, shader))
+# endregion
 
 
+# region === Number rendering ===
 def num_width(number):
-    width = 1
-    if number < 0:
-        width += 1
+    """Given a number, compute it's width in characters when rendered.
 
-    val = abs(number)
-    while val := int(val / 10):
-        width += 1
-
-    return width
-
+    :param int,float number: The number to measure
+    :returns int: The width of the number in characters
+    """
+    return len(str(number))
 
 def get_int_char(number, i, width=None):
+    """Given a number, sample the ith character of it when rendered, with optional padding.
+
+    :param int,float number: The number to render and sample.
+    :param int i: the index of the rendered string to sample.
+    :param int width: pad the string to this width before sampling.
+        Optional, no padding if omitted.
+
+    :returns str: The sampled character.
+    """
     if width is None:
         rendered = str(number)
     else:
         rendered = f"{{:0{width}}}".format(number)
     return rendered[i]
+# endregion
 
 
+# region === Point helpers ===
 DIR_MAP = {
     'L': (-1, 0),
     'U': (0, 1),
@@ -70,10 +142,21 @@ DIR_MAP = {
 
 
 def decomp_direction(dir):
+    """Decompose a direction character into it's component unit vector tuple.
+
+    :param str dir: The direction to decompose
+    :returns (int, int): The unit vector of the specified direction."""
     return DIR_MAP[dir]
 
 
 def reduce_vector(x, y):
+    """Reduce a vector into a unit vector.
+
+    :param int x: x-component to be reduced
+    :param int y: y-component to be reduced
+
+    :returns (int, int): The unit vector reduced from the input components.
+    """
     if x > 1:
         x = 1
     elif x < -1:
@@ -88,10 +171,128 @@ def reduce_vector(x, y):
 
 
 def vector(start, dest):
+    """Calculate the vector between 2 xy coordinate pairs
+
+    :param (int, int) start: The initial coordinates
+    :param (int, int) dest: The destination coordinates
+
+    :returns (int, int): Vector from `start` to `dest`
+    """
     return dest[0] - start[0], dest[1] - start[1]
+# endregion
 
 
-class Point():
+class _Pair:
+    """Represents a generic 2-tuple, meant as an abstract class for Point or Range"""
+    def __init__(self, first, second):
+        self._first = first
+        self._second = second
+
+    def __getitem__(self, key):
+        if key == 0:
+            return self._first
+        if key == 1:
+            return self._second
+
+        raise IndexError
+
+    def __iter__(self):
+        return iter((self._first, self._second))
+
+    def __str__(self):
+        return f"{self._first},{self._second}"
+
+    def __repr__(self):
+        return f"<{self.__class__} object({self._first},{self._second})>"
+
+    def __eq__(self, other):
+        return (self._first, self._second) == other
+
+    def __hash__(self):
+        return hash((self._first, self._second))
+
+
+class Range(_Pair):
+    """Represent a range of values between a lower and upper bound (inclusive)
+
+    behaves like a 2-tuple as much as possible
+
+    :param int lower: Lower bound for the range
+    :param int upper: Upper bound for the range
+    """
+    def __init__(self, lower, upper):
+        """Constructor for a Range
+
+        :param int lower: Lower bound for the range
+        :param int upper: Upper bound for the range
+        """
+        super().__init__(lower, upper)
+
+    @property
+    def lower(self):
+        return self._first
+
+    @property
+    def upper(self):
+        return self._second
+
+    @property
+    def l(self):
+        return self.lower
+
+    @property
+    def u(self):
+        return self.upper
+
+    @property
+    def right(self):
+        return self.upper
+
+    @property
+    def r(self):
+        return self.right
+
+    def __contains__(self, key):
+        try:
+            return all(el in self for el in key)
+        except TypeError:  # not iterable
+            return key >= self.lower and key <= self.upper
+
+    def constrain(self, n):
+        """Given an integer, constrain it to the range
+
+        :param int n: The integer to constrain
+        :return int: The constrained integer
+        """
+
+        if n < self.lower:
+            n = self.lower
+        if n > self.upper:
+            n = self.upper
+
+        return n
+
+    def is_disjoint_with(self, other_lower, other_upper):
+        """Determine if another range is disjoint (not touching or overlapping) with this one
+
+        to use with a Range, do `my_range.is_disjoint_with(*other_range)`
+
+        :param int other_lower: lower-bound of the other range
+        :param int other_upper: upper-bound of the other range
+        :return bool: True if the ranges are disjoint, False if they touch or overlap
+        """
+        left = (self[0], self[1])
+        right = (other_lower, other_upper)
+
+        if left[0] > right[0]:
+            left, right = right, left
+
+        if right[0] - left[1] > 1:
+            return True
+        return False
+
+
+class Point(_Pair):
     """A 2-dimensional coordinate
 
     :param int x: x coordinate
@@ -101,34 +302,26 @@ class Point():
 
     x and y coordinates can be accessed via the `x` and `y` attributes, or by item
     indexes 0 and 1 respectively.  Behaves like a 2-tuple coordinate as much as possible
+
+    To copy a Point object do: Point(*other_point)
     """
     def __init__(self, x, y=None):
+        """Constructor for a Point object
+
+        :param int|str x: x-component or direction string
+        :param int y: y-component, omit for direction.
+        """
         if isinstance(x, str) and x in DIR_MAP:  # handle directions
             x, y = DIR_MAP[x]
 
-        self.x = x
-        self.y = y
+        super().__init__(x, y)
 
-    def __getitem__(self, key):
-        if key == 0:
-            return self.x
-        if key == 1:
-            return self.y
+    @property
+    def x(self):
+        return self._first
 
-    def __iter__(self):
-        return iter((self.x, self.y))
-
-    def __str__(self):
-        return f"{self.x},{self.y}"
-
-    def __repr__(self):
-        return f"<Point object({self.x},{self.y})>"
-
-    def __eq__(self, other):
-        return (self.x, self.y) == other
-
-    def __hash__(self):
-        return hash((self.x, self.y))
+    def y(self):
+        return self._second
 
     def vector_to(self, *args):
         """Given another point (or x,y coordinates), determine the vector to that point
@@ -153,6 +346,7 @@ class Point():
 
 
 class Grid:
+
     def __init__(self, dimensions=(0, 0), origin=(0, 0), offset=(0, 0), value=None, x_axis_spacing=5):
         """Construct the grid
 
