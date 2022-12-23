@@ -5,31 +5,60 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Test Advent",
+      "name": "Test part 1",
       "type": "python",
       "request": "launch",
+      "preLaunchTask": "hide_pipenv",
+      "postDebugTask": "replace_pipenv",
+      "env": {
+        "PYTHONPATH": "${relativeFileDirname}/.."
+      },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/test.txt"],
+      "args": ["${relativeFileDirname}/test.txt", "1"],
       "console": "integratedTerminal",
       "justMyCode": true
     },
     {
-      "name": "Test Advent(go.sh)",
+      "name": "Guess part 1",
       "type": "python",
       "request": "launch",
+      "preLaunchTask": "hide_pipenv",
+      "postDebugTask": "replace_pipenv",
+      "env": {
+        "PYTHONPATH": "${relativeFileDirname}/.."
+      },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/test.txt"],
+      "args": ["${relativeFileDirname}/input.txt", "1"],
       "console": "integratedTerminal",
       "justMyCode": true
     },
     {
-      "name": "Guess Advent",
+      "name": "Test part 2",
       "type": "python",
       "request": "launch",
+      "preLaunchTask": "hide_pipenv",
+      "postDebugTask": "replace_pipenv",
+      "env": {
+        "PYTHONPATH": "${relativeFileDirname}/.."
+      },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/input.txt"],
+      "args": ["${relativeFileDirname}/test.txt", "2"],
       "console": "integratedTerminal",
       "justMyCode": true
     },
+    {
+      "name": "Guess part 2",
+      "type": "python",
+      "request": "launch",
+      "preLaunchTask": "hide_pipenv",
+      "postDebugTask": "replace_pipenv",
+      "env": {
+        "PYTHONPATH": "${relativeFileDirname}/.."
+      },
+      "program": "${file}",
+      "args": ["${relativeFileDirname}/input.txt", "2"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
   ]
 }
