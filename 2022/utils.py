@@ -1,6 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
+from dataclasses import dataclass
 
 # region === Output stuff ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -109,6 +110,7 @@ def num_width(number):
     :returns int: The width of the number in characters
     """
     return len(str(number))
+
 
 def get_int_char(number, i, width=None):
     """Given a number, sample the ith character of it when rendered, with optional padding.
@@ -237,7 +239,7 @@ class Range(_Pair):
         return self._second
 
     @property
-    def l(self):
+    def l(self):  # noqa E743
         return self.lower
 
     @property
@@ -519,3 +521,6 @@ class Grid:
     def __iter__(self):
         """iterator of rows, which can be iterated themselves"""
         return self.values
+
+
+INFINITY = 9_999_999_999
