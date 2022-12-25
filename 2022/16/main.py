@@ -171,12 +171,13 @@ class State:
     :field str pos: The label for the valve that the player is at in this state
     :field tuple[str] open_valves: Labels of valves that are open after this state
     :field int score_so_far: Pressure relieved up to the moment of this state
+    :field int remaining_players: number of players left to pla for after this one, defaults to 0 (1 player)
     """
     t: int  # time left
     pos: str
     open_valves: tuple[str]
     score_so_far: int
-    # remaining_players: int = 0
+    remaining_players: int = 0
 
     @property
     def valid(self):
@@ -189,7 +190,8 @@ class State:
         return self.t >= 0
 
     def __repr__(self):
-        return f"<{self.pos}@{self.t}:{','.join(v for v in self.open_valves)}={self.score_so_far}>"
+        remaining = f"({self.remaining_players} left)" if self.remaining_players else ''
+        return f"<{self.pos}@{self.t}:{','.join(v for v in self.open_valves)}={self.score_so_far}{remaining}>"
 
 
 class Solver:
@@ -254,7 +256,7 @@ class Solver:
         good_valves = [v for v, valve in self.graph.nodes.items() if valve.flow_rate]
 
         # create initial state
-        state = State(time, start_node, tuple(), 0)  # , players - 1)
+        state = State(time, start_node, tuple(), 0, players - 1)
         best = self.score_state(state)
         to_explore = [state]
 
