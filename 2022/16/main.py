@@ -1,186 +1,283 @@
-import re
 from argparse import ArgumentParser
-from utils import logger, parse_input, LOG_LEVEL
-from collections import deque
+from dataclasses import dataclass, field
+import re
 
-def render_open_valves(valves, relief):
-    if not valves:
-        return "No valves are open."
-
-    return f"Valve {', '.join(v.label for v in valves)} open, releasing {relief} pressure."
+from utils import logger, parse_input, INFINITY
 
 
-def backtrack(distances, dest, src):
-    cur = src
-    path = []
+@dataclass(frozen=True)
+class ValveStruct:
+    """Represents a Valve in the Volcano
 
-    def get_distance(key):
-        return distances[key]
+    :param str label: The label for the valve
+    :param int flow_rate: Pressure relievef per minute this valve is open
+    :param tuple[str] neighbors: tuple of valve labels that are adjacent to this valve
+    """
+    label: str = field(compare=True)
+    flow_rate: int = field(compare=False)
+    neighbors: tuple[str] = field(compare=False)
 
-    while cur != dest:
-        path.append(cur)
-
-        opts = cur.tunnels.keys()
-        cur = cur.tunnels[sorted(opts, key=get_distance)[0]]
-
-    path.reverse()
-    return path
-
-
-INFINITY = 9_999_999_999
-
-class Valve:
     pattern = re.compile(r'Valve ([A-Z]{2}) has flow rate=(\d+); tunnels? leads? to valves? ([A-Z, ]+)$')
 
-    def __init__(self, label, flow_rate, tunnels, volcano):
-        self.label = label
-        self.flow_rate = flow_rate
-        self.tunnels = {t: None for t in tunnels}
-        self.volcano = volcano
-        self.opened_at = None
+    @classmethod
+    def parse(cls, input):
+        """Instantiate a ValveStruct from a line from the challenge input
+
+        :param str input: The line from the input representing this valve
+        :return ValveStruct: The Valve object as specified
+        """
+        matches = ValveStruct.pattern.match(input)
+
+        label = matches[1]
+        flow_rate = int(matches[2])
+        tunnels = matches[3].split(', ')
+
+        return ValveStruct(label, flow_rate, tunnels)
+
+    def render(self):
+        """Render out the spec for this ValveStruct
+
+        :return str: The Spec from which this ValveStruct was generated
+        """
+        pluralized = 'tunnels lead to valves' if len(self.neighbors) > 1 else 'tunnel leads to valve'
+        return (
+            f"Valve {self.label} has flow rate={self.flow_rate}; {pluralized} {', '.join(self.neighbors)}"
+        )
+
+    def __str__(self):
+        return self.label
+
+    def __repr__(self):
+        return f"<{self.label},{self.flow_rate}>"
+
+
+class ValveGraph:
+    """Represents the graph of Valves"""
+    @classmethod
+    def parse(cls, specs):
+        return ValveGraph([ValveStruct.parse(spec) for spec in specs])
+
+    def __init__(self, nodes):
+        """Construct a ValveGraph.
+
+        :param iter[ValveStruct] nodes: iterable of ValveStructs representing nodes in the graph
+        """
+        self.nodes = {node.label: node for node in nodes}
         self.paths = {}
 
-    def add_tunnel(self, other):
-        self.tunnels[other.label] = other
-        self.paths[other.label] = [other.label]
+    def backtrack(self, distances, dest, src):
+        """Given tentative distances from Djikstra's algorithm, backtrack the path from an endpoint to a start point
 
-    def find_path(self, dest, _search=True):
-        path = self.paths.get(dest)
-        if path: return path
+        :param dict[str: int]: Dict of distances to a given node from _src_
+        :param str dest: Label of the node from which to backtrack
+        :param str src: Label of the node to backtrack to
 
-        if _search:
-            self.map_tunnels()
-            return self.find_path(dest, False)
+        :returns list[str]: A list of node labels representing the optimal path from _src_ to _dest_ in the graph
+        """
+        cur = self.nodes[src]
+        path = []
 
-        raise IndexError(f"Path for {dest} was not found from {self.label}")
+        def get_distance(key):
+            return distances[key]
 
-    def map_tunnels(self):
+        while cur.label != dest:
+            path.append(cur.label)
+
+            cur = self.nodes[sorted(cur.neighbors, key=get_distance)[0]]
+
+        # TODO: unnecessary?
+        path.reverse()
+        return path
+
+    def _map_from_node(self, node: ValveStruct):
+        """Map out all the paths from a given node
+
+        Hello Djikstra my old friend...
+
+        :param ValveStruct node: The node from which to start
+        :return dict[str:list[str]]: dict of paths to each other node
+        """
+        paths = {}
         tent_dist = {}
         unvisited = []
-        for v in self.volcano.valves:
-            tent_dist[v.label] = 0 if v == self else INFINITY
-            unvisited.append(v)
+        for n in self.nodes:
+            tent_dist[n] = 0 if n == node.label else INFINITY
+            unvisited.append(n)
 
+        # TODO replace with tent_dist.get?
         def get_tentative(valve):
-            return tent_dist[valve.label]
+            return tent_dist[valve]
 
         visited = set()
 
         while unvisited:
             unvisited.sort(key=get_tentative, reverse=True)
-            cur = unvisited.pop()
+            cur = self.nodes[unvisited.pop()]
 
             c_dist = tent_dist[cur.label]
-            neighbors = [self.volcano.index[t] for t in cur.tunnels if t not in visited]
+            neighbors = [self.nodes[t] for t in cur.neighbors if t not in visited]
 
             for n in neighbors:
                 n_dist = c_dist + 1
                 if n_dist < tent_dist[n.label]: tent_dist[n.label] = n_dist
 
             visited.add(cur)
-            if self != cur:
-                self.paths[cur.label] = backtrack(tent_dist, self, cur)
+            if node != cur:
+                paths[cur.label] = self.backtrack(tent_dist, node.label, cur.label)
 
+        return paths
+
+    def map_paths(self):
+        """Map out all of the paths from node to node, noting distances
+
+        i.e. paths[x][y] will return the list of nodes in the optimal path from _x_ to _y_ (not including _x_)
+
+        e.g.:
+
+        paths['A']['D'] => ['B', 'C', 'D']
+
+        :return dict: The pathing matrix
+        """
+        self.paths = {
+            valve: self._map_from_node(self.nodes[valve])
+            for valve in self.nodes
+        }
+
+    def get_distance(self, src: str, dest: str):
+        """Get the distance between 2 nodes
+
+        :param str src: label of initial node
+        :param str dest: label of destination node
+
+        :return int: the distance between the specified nodes
+        """
+        return len(self.paths[src][dest])
 
     def __str__(self):
-        raw_tunnels = self.tunnels.keys()
-        pluralized = 'tunnels lead to valves' if len(raw_tunnels) > 1 else 'tunnel leads to valve'
-        return (
-            f"Valve {self.label} has flow rate={self.flow_rate}; {pluralized} {', '.join(raw_tunnels)}"
-        )
+        """Render a string-representation of the graph
 
-    def render_paths(self):
-        return [f"Paths from {self.label}:"] + [
-            f"- {dest}: {','.join(v.label for v in path)}({len(path)})"
-            for dest, path in self.paths.items()
-        ]
+        Basically, just repro the input for parse testing
+
+        :return str: The spec that was used to generate this graph
+        """
+        return '\n'.join(valve.render() for valve in self.nodes.values())
+
+
+@dataclass(frozen=True, order=True)
+class State:
+    """Represents a possible state if a valve-opening procedure
+
+    :field int t: The number of minutes remaining after this state is achieved
+    :field str pos: The label for the valve that the player is at in this state
+    :field tuple[str] open_valves: Labels of valves that are open after this state
+    :field int score_so_far: Pressure relieved up to the moment of this state
+    """
+    t: int  # time left
+    pos: str
+    open_valves: tuple[str]
+    score_so_far: int
+    # remaining_players: int = 0
+
+    @property
+    def valid(self):
+        """Whether this state is actually valid.
+
+        States that occur after the time limit are not valid.
+
+        :return bool: Whether this state is valid or not.
+        """
+        return self.t >= 0
 
     def __repr__(self):
-        return f"<Valve {self.label}>"
-
-    def __hash__(self):
-        return hash(self.label)
-
-    def __eq__(self, other):
-        if isinstance(other, str) and len(other) == 2:
-            return self.label == other
-        return self.label == other.label
+        return f"<{self.pos}@{self.t}:{','.join(v for v in self.open_valves)}={self.score_so_far}>"
 
 
+class Solver:
+    """Top-level logic object for AoC 2022-16"""
+    def __init__(self, graph):
+        """Constructor
 
-class Volcano:
-    def __init__(self, lines, part):
-        self.part = part
-        self.valves = self.parse(lines)
-        self.t = 0
-        self.pressure = 0
-        self.useful_valves = []
+        :param ValveGraph graph: The ValveGraph representing the valves in the volcano
+        """
+        self.graph = graph
+        self.scores = {}
 
-        self.index = {v.label: v for v in self.valves}
+    def get_flow(self, valves: tuple[str]):
+        """Calculate the total flow rate for a set of open valves
 
-        for valve in self.valves:
-            for tunnel in valve.tunnels:
-                valve.add_tunnel(self.index[tunnel])
-            if valve.flow_rate:
-                self.useful_valves.append(valve)
+        :param tuple[str] valves: Tuple of valve labels for which to compute flow rate
+        :return int: The total flow rate for the specified valves
+        """
+        return sum(self.graph.nodes[v].flow_rate for v in valves)
 
+    def score_state(self, state):
+        """Calculate the total score/pressure relieved for a given state if no further moves are taken
 
-    def __str__(self):
-        return '\n'.join(str(valve) for valve in self.valves)
+        Also memoizes the state in self.scores because DP BayBeeee
 
-    def parse_valve(self, line):
-        matches = Valve.pattern.match(line)
-        label = matches[1]
-        flow_rate = int(matches[2])
-        tunnels = matches[3].split(', ')
+        :param State state: The state for which to calculate the score
+        :return int: The score of the state provided
+        """
+        if state not in self.scores:
+            self.scores[state] = state.score_so_far + state.t * self.get_flow(state.open_valves)
 
-        return Valve(label, flow_rate, tunnels, self)
+        return self.scores[state]
 
-    def parse(self, lines):
-        return [self.parse_valve(line) for line in lines]
+    def next_state(self, state: State, dest: str):
+        """Compute a next state from a given State and the next node to move to
 
-    def relieve_pressure(self, minutes):
-        for valve in self.valves:
-            valve.map_tunnels()
-            if LOG_LEVEL == 'DEBUG': logger.debug('\n'.join(valve.render_paths()))
+        :param State state: The current state from which to compute the next
+        :param str dest: The next valve the player will move towards
 
-        current_valve = self.index['AA']
-        open_valves = {}
-        pressure_relieved = 0
+        :return State: The next State, after the player has moved to the next node
+        """
+        delta_t = self.graph.get_distance(state.pos, dest) + 1
+        additional_score = delta_t * self.get_flow(state.open_valves)
 
-        path = []
+        return State(
+            t=state.t - delta_t,
+            pos=dest,
+            open_valves=state.open_valves + (dest,),
+            score_so_far=state.score_so_far + additional_score
+        )
 
-        for t in range(minutes):
-            pressure = sum(v.flow_rate for v in open_valves.values())
-            pressure_relieved += pressure
-            logger.info(f"== Minute {t + 1} ==")
-            logger.info(render_open_valves(open_valves, pressure))
+    def solve(self, time=3, players=1, start_node='AA'):
+        """Calculate the optimal pressure relieved.
 
-            if path:
-                # take next step
-                pass
+        :param int time: Number of minutes available to solve the puzzle, defaults to 30
+        :param int players: Number of players available (just me, or elephant too?), defaults to 1
+        :param start_node: The label for the node which players start at, defaults to 'AA
 
-            # show options
-            options = {
-                valve.label: (valve.flow_rate, current_valve.paths[valve])
-                for valve in self.useful_valves
-            }
-            breakpoint()
+        :return int: The optimal pressure relieved
+        """
+        # exclude valves with 0 flow from candidate nodes - we'll never open them anyways
+        good_valves = [v for v, valve in self.graph.nodes.items() if valve.flow_rate]
 
+        # create initial state
+        state = State(time, start_node, tuple(), 0)  # , players - 1)
+        best = self.score_state(state)
+        to_explore = [state]
 
+        # depth-first-search baybeee
+        while to_explore:
+            state = to_explore.pop()
 
+            # determine where we can go from this state
+            options = [v for v in good_valves if v not in state.open_valves]
+            for v in options:
+                # Skip it if it's too long
+                next_state = self.next_state(state, v)
+                if not next_state.valid: continue
 
-        return pressure_relieved
+                to_explore.append(next_state)
 
+                # evaluate this next option
+                score = self.score_state(next_state)
+                if score > best:
+                    logger.info(f"New best: {best} from {repr(next_state)}")
+                    best = score
 
-    def answer(self, *args, **kwargs):
-        if self.part == 1:
-            return self.relieve_pressure(*args)
-
-        return 0
-
-
-
+        return best
 
 
 arg_parser = ArgumentParser('python -m 16.main 16', description="Advent of Code Day 16")
@@ -190,9 +287,12 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    thing = Volcano(parse_input(argus.input_path), argus.part)
+    graph = ValveGraph.parse(line for line in parse_input(argus.input_path))
+    graph.map_paths()
+    print(graph)  # to test parsing
 
-    logger.info(thing)
-    logger.debug('')
-
-    print(f"answer:\n{thing.answer(30)}")
+    solver = Solver(graph)
+    if argus.part == 1:
+        print(solver.solve(30, 1, 'AA'))
+    elif argus.part == 2:
+        print(solver.solve(26, 2, 'AA'))
