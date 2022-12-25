@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "preLaunchTask": "hide_pipenv",
+      "postDebugTask": "replace_pipenv",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
       "name": "Test part 1",
       "type": "python",
       "request": "launch",
@@ -14,7 +24,10 @@
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/test.txt", "1"],
+      "args": [
+        "${relativeFileDirname}/test.txt",
+        "1"
+      ],
       "console": "integratedTerminal",
       "justMyCode": true
     },
@@ -28,7 +41,10 @@
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/input.txt", "1"],
+      "args": [
+        "${relativeFileDirname}/input.txt",
+        "1"
+      ],
       "console": "integratedTerminal",
       "justMyCode": true
     },
@@ -42,7 +58,10 @@
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/test.txt", "2"],
+      "args": [
+        "${relativeFileDirname}/test.txt",
+        "2"
+      ],
       "console": "integratedTerminal",
       "justMyCode": true
     },
@@ -56,7 +75,10 @@
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
       "program": "${file}",
-      "args": ["${relativeFileDirname}/input.txt", "2"],
+      "args": [
+        "${relativeFileDirname}/input.txt",
+        "2"
+      ],
       "console": "integratedTerminal",
       "justMyCode": true
     }
