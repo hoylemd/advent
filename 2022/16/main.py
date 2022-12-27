@@ -1,8 +1,11 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass, field
 import re
+import time
 
-from utils import logger, parse_input, INFINITY, list_from_mask  # noqa F401
+from utils import (
+    logger, parse_input, INFINITY, list_from_mask, partition_elements_to_mask, seconds_to_string  # noqa F401
+)
 
 
 @dataclass(frozen=True)
@@ -294,8 +297,37 @@ class Solver:
 
         return best
 
-    def solve_part_2(self, time: int, start_node: str, players: int, valves: list[str]):
-        pass
+    def solve_part_2(self, time_left: int, start_node: str, players: int, valves: list[str]):
+        best = 0
+        all_partitions = [parts for parts in partition_elements_to_mask(valves)]
+        n_partitions = len(all_partitions)
+        start_time = time.time()
+        now = start_time
+        for i, (left, right) in enumerate(all_partitions):
+            mine = list_from_mask(valves, left)
+            elephants = list_from_mask(valves, right)
+
+            if i and i % 100 == 0:
+                new_now = time.time()
+                this_batch = int(new_now - now)
+                elapsed = int(time.time() - start_time)
+                batches = i // 100
+                remaining = (n_partitions - i) // 100
+                avg_time = elapsed / (batches or 1)
+                eta = int(remaining * avg_time)
+
+                logger.info(f"progress: {i}/{n_partitions} ({left:016b},{right:016b})")
+                logger.info(
+                    f"  {seconds_to_string(elapsed)}({this_batch}s) elapsed, "
+                    f"{remaining} batches left, est {seconds_to_string(eta)} to go."
+                )
+
+                now = new_now
+
+            score = self.solve(time_left, start_node, mine) + self.solve(time_left, start_node, elephants)
+            best = max(best, score)
+
+        return best
 
 
 arg_parser = ArgumentParser('python -m 16.main 16', description="Advent of Code Day 16")
