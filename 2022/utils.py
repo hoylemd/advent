@@ -1,7 +1,6 @@
 """General-purpose helper modules"""
 import os
 import logging
-from dataclasses import dataclass
 
 # region === Output stuff ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -184,8 +183,10 @@ def vector(start, dest):
 # endregion
 
 
+# region === Cartesian plane stuff ===
 class _Pair:
     """Represents a generic 2-tuple, meant as an abstract class for Point or Range"""
+
     def __init__(self, first, second):
         self._first = first
         self._second = second
@@ -222,6 +223,7 @@ class Range(_Pair):
     :param int lower: Lower bound for the range
     :param int upper: Upper bound for the range
     """
+
     def __init__(self, lower, upper):
         """Constructor for a Range
 
@@ -307,6 +309,7 @@ class Point(_Pair):
 
     To copy a Point object do: Point(*other_point)
     """
+
     def __init__(self, x, y=None):
         """Constructor for a Point object
 
@@ -521,6 +524,62 @@ class Grid:
     def __iter__(self):
         """iterator of rows, which can be iterated themselves"""
         return self.values
+# endregion
 
 
 INFINITY = 9_999_999_999
+
+
+# region === Lists & bitmask ===
+
+def list_from_mask(the_list: list, mask: int):
+    """Given a list and bitmask, return a list of only the elements represented by the bitmask
+
+    :param list the_list: The full list to filter
+    :param int mask: Bitmask representing the elements of the list to pick.
+        Note: the indexes o from left to right if the bitmask is rendered out in binary, so
+        a bitmask of just 1 is only the first element, and a bitmask with only the first bit set
+        will have only the last element
+
+    :return list: The filtered list
+    """
+    return [item for i, item in enumerate(the_list) if mask & 2 ** i]
+
+
+def mask_from_list(the_list: list, elements: list):
+    """Given a list and a second list that is a subset of the first, produce a bitmask of the subset
+
+    :param list the_list: The whole list to pick from
+    :param list elements: The elements for which to produce a bitmask
+
+    :return int: The bitmask representing _elements_ from _the_list_
+    """
+    mask = 0
+    for i, item in enumerate(the_list):
+        if the_list[i] in elements:
+            mask |= 2 ** i
+
+    return mask
+
+
+def partition_elements_to_mask(the_list: list):
+    """Generate pairs of bitmasks for every possible partition of _the_list_ into 2 lists
+
+    A bitmask is an integer, which, when rendered out as a binary string, indicates which elements of _the_list_
+    are represented by the bitmap. e.g. if I have a botmask of 13, that's renders to binary as 1101.
+    So that means the first, third and 4th elements of _the_list_ are represented by that bitmask.
+    Note it's 1, 3 and 4, NOT 1, 2 and 4.  This is because binary strings are written out most-significant
+    to least significant
+
+    :param list the_list: The full list for which to partition bitmasks
+    :yield tuple[int, int]: Pairs of bitmasks representing a possible partition of _the_list_
+    """
+    full_mask = (1 << len(the_list)) - 1  # make a full bitmask for the array
+    for i in range((full_mask + 1) // 2):
+        yield i, full_mask ^ i
+
+
+def letter_list(n):
+    return [chr(ord('a') + i) for i in range(n)]
+
+# endregion
