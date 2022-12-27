@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from dataclasses import dataclass, field
 import re
 
-from utils import logger, parse_input, INFINITY
+from utils import logger, parse_input, INFINITY, list_from_mask  # noqa F401
 
 
 @dataclass(frozen=True)
@@ -104,14 +104,10 @@ class ValveGraph:
             tent_dist[n] = 0 if n == node.label else INFINITY
             unvisited.append(n)
 
-        # TODO replace with tent_dist.get?
-        def get_tentative(valve):
-            return tent_dist[valve]
-
         visited = set()
 
         while unvisited:
-            unvisited.sort(key=get_tentative, reverse=True)
+            unvisited.sort(key=tent_dist.get, reverse=True)
             cur = self.nodes[unvisited.pop()]
 
             c_dist = tent_dist[cur.label]
@@ -168,16 +164,14 @@ class State:
     """Represents a possible state if a valve-opening procedure
 
     :field int t: The number of minutes remaining after this state is achieved
-    :field str pos: The label for the valve that the player is at in this state
-    :field tuple[str] open_valves: Labels of valves that are open after this state
+    :field str pos: The label for the valve that the current player is at in this state
+    :field int open_valves: bitmask of open valves
     :field int score_so_far: Pressure relieved up to the moment of this state
-    :field int remaining_players: number of players left to pla for after this one, defaults to 0 (1 player)
     """
     t: int  # time left
     pos: str
-    open_valves: tuple[str]
+    open_valves: int  # bitmask representing the open valves
     score_so_far: int
-    remaining_players: int = 0
 
     @property
     def valid(self):
@@ -190,12 +184,12 @@ class State:
         return self.t >= 0
 
     def __repr__(self):
-        remaining = f"({self.remaining_players} left)" if self.remaining_players else ''
-        return f"<{self.pos}@{self.t}:{','.join(v for v in self.open_valves)}={self.score_so_far}{remaining}>"
+        return f"<{self.pos}@{self.t}:{self.open_valves:016b}={self.score_so_far}>"
 
 
 class Solver:
     """Top-level logic object for AoC 2022-16"""
+
     def __init__(self, graph):
         """Constructor
 
@@ -203,14 +197,27 @@ class Solver:
         """
         self.graph = graph
         self.scores = {}
+        self.bitmasks = {
+            valve: 2 ** i
+            for i, valve in enumerate(self.good_valves)
+        }
 
-    def get_flow(self, valves: tuple[str]):
+        self.flow_by_mask = {}
+
+    def get_flow(self, mask: int):
         """Calculate the total flow rate for a set of open valves
 
-        :param tuple[str] valves: Tuple of valve labels for which to compute flow rate
+        :param tuple[str] mask: bitmask for the valves in question
         :return int: The total flow rate for the specified valves
         """
-        return sum(self.graph.nodes[v].flow_rate for v in valves)
+        flow = self.flow_by_mask.get(mask)
+
+        if flow is None:
+            valves = list_from_mask(self.good_valves, mask)
+            flow = sum(self.graph.nodes[v].flow_rate for v in valves)
+            self.flow_by_mask[mask] = flow
+
+        return flow
 
     def score_state(self, state):
         """Calculate the total score/pressure relieved for a given state if no further moves are taken
@@ -239,47 +246,56 @@ class Solver:
         return State(
             t=state.t - delta_t,
             pos=dest,
-            open_valves=state.open_valves + (dest,),
-            score_so_far=state.score_so_far + additional_score
+            open_valves=state.open_valves | self.bitmasks[dest],
+            score_so_far=state.score_so_far + additional_score,
         )
 
-    def solve(self, time=3, players=1, start_node='AA'):
+    @property
+    def good_valves(self):
+        """List of labels of useful valves in the volcano.
+
+        useful valves are those with a non-zero flow rate
+
+        :return list[str]: List of the useful valve labels
+        """
+
+        return [v for v, valve in self.graph.nodes.items() if valve.flow_rate]
+
+    def solve(self, time=30, start_node='AA', good_valves=None):
         """Calculate the optimal pressure relieved.
 
         :param int time: Number of minutes available to solve the puzzle, defaults to 30
+        :param start_node: The label for the node which players start at, defaults to 'AA'
         :param int players: Number of players available (just me, or elephant too?), defaults to 1
-        :param start_node: The label for the node which players start at, defaults to 'AA
+        :param tuple[str] open_valves: Tuple of valves already opened by a previous player, optional
 
         :return int: The optimal pressure relieved
         """
-        # exclude valves with 0 flow from candidate nodes - we'll never open them anyways
-        good_valves = [v for v, valve in self.graph.nodes.items() if valve.flow_rate]
-
         # create initial state
-        state = State(time, start_node, tuple(), 0, players - 1)
+        state = State(time, start_node, 0, 0)
         best = self.score_state(state)
         to_explore = [state]
 
         # depth-first-search baybeee
         while to_explore:
             state = to_explore.pop()
+            score = self.score_state(state)
+            best = max(best, score)
 
             # determine where we can go from this state
-            options = [v for v in good_valves if v not in state.open_valves]
-            for v in options:
-                # Skip it if it's too long
-                next_state = self.next_state(state, v)
-                if not next_state.valid: continue
+            options = [
+                self.next_state(state, v)
+                for v in good_valves
+                if (not self.bitmasks[v] & state.open_valves) and (self.graph.get_distance(state.pos, v) < state.t)
+            ]
 
+            for next_state in options:
                 to_explore.append(next_state)
 
-                # evaluate this next option
-                score = self.score_state(next_state)
-                if score > best:
-                    logger.info(f"New best: {best} from {repr(next_state)}")
-                    best = score
-
         return best
+
+    def solve_part_2(self, time: int, start_node: str, players: int, valves: list[str]):
+        pass
 
 
 arg_parser = ArgumentParser('python -m 16.main 16', description="Advent of Code Day 16")
@@ -295,6 +311,6 @@ if __name__ == '__main__':
 
     solver = Solver(graph)
     if argus.part == 1:
-        print(solver.solve(30, 1, 'AA'))
+        print(solver.solve(30, 'AA', solver.good_valves))
     elif argus.part == 2:
-        print(solver.solve(26, 2, 'AA'))
+        print(solver.solve_part_2(26, 'AA', 2, solver.good_valves))
