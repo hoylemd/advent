@@ -2,7 +2,7 @@
 import os
 import logging
 
-# region === Output stuff ===
+# region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger(__name__)
 logger.setLevel(LOG_LEVEL)
@@ -126,6 +126,27 @@ def get_int_char(number, i, width=None):
     else:
         rendered = f"{{:0{width}}}".format(number)
     return rendered[i]
+
+
+def seconds_to_string(secs: int):
+    """Convert an integer number of seconds into a HH:MM:SS, MM:SS, or SSs string
+
+    :param int secs: Sconds to convert
+    :return str: The number of seconds in human-readable format
+    """
+    if secs <= 60:
+        return f"{secs}s"
+
+    mins = secs // 60
+    secs = secs - mins * 60
+
+    if mins <= 60:
+        return f"{mins}:{secs:02}"
+
+    hrs = mins // 60
+    mins = mins - hrs * 60
+
+    return f"{hrs}:{mins:02}:{secs:02}"
 # endregion
 
 
