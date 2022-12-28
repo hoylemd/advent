@@ -227,7 +227,7 @@ class _Pair:
         return f"{self._first},{self._second}"
 
     def __repr__(self):
-        return f"<{self.__class__} object({self._first},{self._second})>"
+        return f"<{self.__class__.__name__} object({self._first},{self._second})>"
 
     def __eq__(self, other):
         return (self._first, self._second) == other
@@ -346,8 +346,12 @@ class Point(_Pair):
     def x(self):
         return self._first
 
+    @property
     def y(self):
         return self._second
+
+    def __repr__(self):
+        return f"<{self.x},{self.y}>"
 
     def vector_to(self, *args):
         """Given another point (or x,y coordinates), determine the vector to that point
