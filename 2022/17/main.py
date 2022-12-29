@@ -31,32 +31,30 @@ class Rock:
         return '\n'.join(self.new_lines)
 
 
+# inverted for easier rendering etc
 rock_sequence = {
-    '-': Rock('-', ['####']),
-    '+': Rock('+', [
+    '-': Rock('-', ['####']),  # 4 possible x outcomes * 9
+    '+': Rock('+', [          # 5 possible x outcomes * 9
         ' # ',
         '###',
         ' # '
     ]),
-    'L': Rock('L', [  # inverted for easier rendering etc
+    'L': Rock('L', [          # 5 possible x outcomes * 9
         '###',
         '  #',
         '  #'
     ]),
-    '|': Rock('I', [
+    'I': Rock('I', [          # 7 possible x outcomes * 9
         '#',
         '#',
         '#',
         '#'
     ]),
-    'o': Rock('o', [
+    'o': Rock('o', [          # 6 possible x outcomes * 9
         '##',
         '##'
     ])
 }
-
-for rock in rock_sequence.values():
-    print(rock)
 
 
 SPAWN_OFFSET = Point(2, 3)
@@ -68,7 +66,10 @@ class Cave:
         self.jets = self.parse(lines)
         self.width = width
         self.rows = []
+        self.masks = []
         self.rocks = []
+        self.preamble = None  # will be (# rocks before repeats begin, height before repeats begin)
+        self.cycle = None  # will be (# rocks/cycle, height of the cycle)
 
     @property
     def height(self):
@@ -98,6 +99,35 @@ class Cave:
     def top_n_rows(self, rows):
         return '\n'.join(self.render(rows))
 
+    def rock_specs(self):
+        seen_ys = {label: set() for label in rock_sequence.keys()}
+        with open('rocks.txt', 'w') as fp:
+            for rock, x, y in self.rocks:
+                seen_ys[rock.label].add(y)
+                fp.write(f"{rock.label},{x},{y}\n")
+
+        n_states = 0
+        for label, ys in seen_ys.items():
+            rock = rock_sequence[label]
+            total_possibilities = max(ys) * (7 - rock.width)
+            print(f"Max y seen for {label}: {max(ys)}, possible x outcomes: {7 - rock.width} {total_possibilities=}")
+            n_states += total_possibilities
+
+        print(f"Total possible outcomes: {n_states} (from simulating {len(self.rocks)} rocks)")
+
+    def analyze_specs(self):
+        # convert specs into an int array
+        rock_idx = {label: index for index, label in enumerate(rock_sequence)}
+
+        def integerize(rock, x, y):
+            rock_comp = rock_idx[rock.label] << (5 + 3)  # 5 options, 3 bits
+            x_comp = x << 5                             # 6 options, 3 bits
+            y_comp = y                                  # 29 options, 5 bits
+            return rock_comp | x_comp | y_comp
+        state_strings = [
+
+        ]
+
     def add_rows(self, n):
         for _ in range(n):
             self.rows.append(' ' * self.width)
@@ -116,6 +146,7 @@ class Cave:
     def freeze_rock(self, rock, x, y):
         # ensure rows exist
         new_height = y + rock.height
+        prev_height = self.height
         self.add_rows(new_height - self.height)
 
         pen_y = y
@@ -126,7 +157,7 @@ class Cave:
 
             pen_y += 1
 
-        self.rocks.append((rock, x, y))
+        self.rocks.append((rock, x, -(y - prev_height)))
 
     def collides(self, rock, x, y):
         if x < 0 or x + rock.width > self.width or y < 0:  # cave boundaries
@@ -193,6 +224,10 @@ class Cave:
 
         return self.height
 
+    def answer2(self, n_rocks=1_000_000_000_000):
+
+        pass
+
 
 arg_parser = ArgumentParser('python -m 17.main 17', description="Advent of Code Day 17")
 arg_parser.add_argument('input_path', help="Path to the input file")
@@ -206,4 +241,8 @@ if __name__ == '__main__':
     logger.info(cave)
     logger.debug('')
 
-    print(f"answer:\n{cave.answer()}")
+    if argus.part == 1:
+        print(f"answer:\n{cave.answer(20_000)}")
+        cave.rock_specs()
+    else:
+        print(f"answer:\n{cave.answer2()}")
