@@ -46,15 +46,16 @@ def parse_input(path=None):
 
 
 # region === Misc ===
-def noop(argument=None):
+def noop(*args, **kwargs):
     """Single-argument noop, just returns the arg
 
     Just for when you need an operation but don't actually need to do anything
 
-    :param any argument: An argument to be returned, default None
-    :returns any: The argument passed in
+    :param list args: positional arguments to be returned
+    :param list kwargs: keyword args to be returned
+    :returns list, dict: The arguments passed in
     """
-    return argument
+    return args, kwargs
 
 # endregion
 
