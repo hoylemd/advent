@@ -1,10 +1,13 @@
 from argparse import ArgumentParser
-from utils import logger, parse_input, Point
+from utils import logger, parse_input, Point, noop
+
+DEBUG = True
 
 
 class Rock:
-    def __init__(self, label: str, spec: list[str]):
+    def __init__(self, label: str, index: int, spec: list[str]):
         self.label = label
+        self.idx = index
         self.width = len(spec[0])
         self.height = len(spec)
         self.lines = spec
@@ -33,31 +36,61 @@ class Rock:
 
 # inverted for easier rendering etc
 rock_sequence = {
-    '-': Rock('-', ['####']),  # 4 possible x outcomes * 9
-    '+': Rock('+', [          # 5 possible x outcomes * 9
+    '-': Rock('-', 0, ['####']),  # 4 possible x outcomes * 9
+    '+': Rock('+', 1, [          # 5 possible x outcomes * 9
         ' # ',
         '###',
         ' # '
     ]),
-    'L': Rock('L', [          # 5 possible x outcomes * 9
+    'L': Rock('L', 2, [          # 5 possible x outcomes * 9
         '###',
         '  #',
         '  #'
     ]),
-    'I': Rock('I', [          # 7 possible x outcomes * 9
+    'I': Rock('I', 3, [          # 7 possible x outcomes * 9
         '#',
         '#',
         '#',
         '#'
     ]),
-    'o': Rock('o', [          # 6 possible x outcomes * 9
+    'o': Rock('o', 4, [          # 6 possible x outcomes * 9
         '##',
         '##'
     ])
 }
+rock_idx = [r for r in rock_sequence.values()]
 
 
 SPAWN_OFFSET = Point(2, 3)
+
+
+def encode_rock(rock: Rock, x: int, y: int):
+    """Encode a rock outcome into an integer for easier analysis
+
+    :param Rock rock: The Rock object to be encoded
+    :param int x: the final x-displacement of the rock
+    :param int y: the final y-displacement of the rock
+
+    :return int: The encoded rock outcome
+    """
+    rock_comp = rock.idx << (5 + 3) # <8 options, 3 bits
+    x_comp = x << 5                 # <8 options, 3 bits
+    y_comp = y                      # <32 options, 5 bits
+    return rock_comp | x_comp | y_comp
+
+
+def decode_rock(code: int):
+    """Decode a rock code into it's components
+
+    :param int code: The integer code for this rock outcome
+
+    :return tuple[Rock, int, int]: The Rock, and it's final x and y displacements
+    """
+    y = code & 31                   # first 5 bits (from right)
+    x = (code >> 5) & 7             # next 3 bits
+    idx = (code >> 5 + 3) & 7       # last 3 bits
+
+    return rock_idx[idx], x, y
 
 
 class Cave:
@@ -117,16 +150,9 @@ class Cave:
 
     def analyze_specs(self):
         # convert specs into an int array
-        rock_idx = {label: index for index, label in enumerate(rock_sequence)}
+        rox = [encode_rock(*spec) for spec in self.rocks]
 
-        def integerize(rock, x, y):
-            rock_comp = rock_idx[rock.label] << (5 + 3)  # 5 options, 3 bits
-            x_comp = x << 5                             # 6 options, 3 bits
-            y_comp = y                                  # 29 options, 5 bits
-            return rock_comp | x_comp | y_comp
-        state_strings = [
-
-        ]
+        return len(rox)
 
     def add_rows(self, n):
         for _ in range(n):
@@ -177,19 +203,23 @@ class Cave:
 
         return False
 
-    def answer(self, n_rocks=2022):
+    def answer(self, n_rocks=2022, _debug=True):
         t = 0
         rock = None
         spawner = self.rock_spawner()
         pos = None
         falls = 0
 
+        def __debug(m=None):
+            print(m)
+        debug = __debug if _debug else noop
+
         while len(self.rocks) < n_rocks:
             if rock is None:
                 # spawn new rock
                 rock, pos = next(spawner)
-                print(rock)
-                print(self.top_n_rows(7))
+                debug(rock)
+                debug(self.top_n_rows(7))
                 falls = 0
                 pass
 
@@ -197,24 +227,24 @@ class Cave:
             jet = self.jets[t % self.jets_mod]
             next_x = pos.x + jet
             if not self.collides(rock, next_x, pos.y):
-                print(f"jet moved {jet}")
+                debug(f"jet moved {jet}")
                 pos = Point(next_x, pos.y)
             else:
-                print(f"jet movement blocked ({jet})")
+                debug(f"jet movement blocked ({jet})")
 
             # then try to move down
             next_y = pos.y - 1
 
             if self.collides(rock, pos.x, next_y):
                 self.freeze_rock(rock, pos.x, pos.y)
-                print(f"shifts: {pos.x - SPAWN_OFFSET.x}, falls: {falls}, height: {self.height}")
-                print(self.top_n_rows(14))
-                print()
+                debug(f"shifts: {pos.x - SPAWN_OFFSET.x}, falls: {falls}, height: {self.height}")
+                debug(self.top_n_rows(14))
+                debug()
 
                 rock = None
             else:
                 pos = Point(pos.x, next_y)
-                print("fell down")
+                debug("fell down")
                 falls += 1
 
             t += 1
@@ -224,7 +254,33 @@ class Cave:
 
         return self.height
 
+    def find_loop(self):
+        return 0, 0, []  # height of cycle, list of rocks/positions for the cycle
+
+
     def answer2(self, n_rocks=1_000_000_000_000):
+        # simulate a bunch of rocks, that should be enough to reveal the pattern
+        sim_rocks = 3 * ((len(cave.jet_spec) // 3) * len(rock_sequence))
+
+        if sim_rocks >= n_rocks:
+            return self.answer()
+
+        self.answer(20_000, False)
+        self.analyze_specs()
+
+        # search for the loop
+        n_rocks, height = self.find_cycle()
+
+        # measure the preamble
+        preamble_height = 0
+
+        # calculate the looping parts
+        loops_height = 0
+
+        # calculate the coda
+        coda_height = 0
+
+        return preamble_height + loops_height + coda_height
 
         pass
 
@@ -242,7 +298,7 @@ if __name__ == '__main__':
     logger.debug('')
 
     if argus.part == 1:
-        print(f"answer:\n{cave.answer(20_000)}")
+        print(f"answer:\n{cave.answer()}")
         cave.rock_specs()
     else:
         print(f"answer:\n{cave.answer2()}")
