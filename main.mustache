@@ -17,7 +17,7 @@ class Thing:
         return 0
 
 
-arg_parser = ArgumentParser('python -m $N.main $N', description="Advent of Code Day $N")
+arg_parser = ArgumentParser('python -m {{year}}.{{day}}.main', description="Advent of Code {{ year }} Day {{ day }}")
 arg_parser.add_argument('input_path', help="Path to the input file")
 arg_parser.add_argument('part', type=int, default=1, help="Which part of the challenge to apply.")
 
