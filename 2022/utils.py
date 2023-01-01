@@ -56,7 +56,6 @@ def noop(*args, **kwargs):
     :returns list, dict: The arguments passed in
     """
     return args, kwargs
-
 # endregion
 
 
@@ -608,4 +607,51 @@ def partition_elements_to_mask(the_list: list):
 def letter_list(n):
     return [chr(ord('a') + i) for i in range(n)]
 
+
+def rotate_list(obj: list, n: int):
+    """Rotate a list by _n_, returns a new list
+
+    :param list obj: The list to be rotated
+    :param int n: Number of elements to rotate by
+    :return list: The rotated list
+    """
+    return obj[n:] + obj[:n]
+
+
+def find_cycle(seq: list[int]):
+    """Given a list, find a repeating pattern in it, and where it begins
+
+    :param list[int] seq: The sequence to search
+
+    :return tuple[int, int]: index where the cycle starts, length of the cycle
+    :raise IndexError: if a cycle could not be found.
+    """
+    # step one: find the cycle length via backtracking
+    idx, length = 0, 0
+    total_len = len(seq)
+
+    while True:
+        length += 1
+        window_start = total_len - length
+        window = seq[window_start:]
+        if window == seq[window_start - length: window_start]:
+            break
+        if length > total_len / 2:
+            raise IndexError('No repeating cycle found')
+
+    # step two: find the first instance of the cycle in the sequence
+    while True:
+        if seq[idx:idx + length] == window:
+            break
+        idx += 1
+
+    # step three: walk backwards and rotate to find the true start index
+    for r in range(length):
+        rot = r + 1
+        n_win = rotate_list(window, -rot)
+        n_idx = idx - rot
+        if n_win != seq[n_idx:n_idx + length]:
+            break
+
+    return idx - r, length
 # endregion
