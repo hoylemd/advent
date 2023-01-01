@@ -35,6 +35,7 @@ def calc_materials(dimensions):
 
     return totals
 
+
 paper = 0
 ribbon = 0
 for line in fileinput.input(filename):
@@ -42,4 +43,5 @@ for line in fileinput.input(filename):
     paper += materials['paper']
     ribbon += materials['ribbon']
 
-print ribbon
+
+print(ribbon)
