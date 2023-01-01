@@ -29,4 +29,5 @@ for drunk_direction in elfs_drunken_directions:
     else:
         gifter = santa
 
-print len(happy_children.keys())
+
+print(len(happy_children.keys()))
