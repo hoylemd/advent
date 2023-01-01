@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from utils import logger, parse_input, Point, noop
+from utils import logger, parse_input, Point, noop, find_cycle
 
 DEBUG = True
 
@@ -86,12 +86,18 @@ def decode_rock(code: int):
 
     :return tuple[Rock, int, int]: The Rock, and it's final x and y displacements
     """
-    y = code & 31                   # first 5 bits (from right)
-    x = (code >> 5) & 7             # next 3 bits
-    idx = (code >> 5 + 3) & 7       # last 3 bits
+    y = code & 0b11111              # first 5 bits (from right)
+    x = (code >> 5) & 0b111         # next 3 bits
+    idx = (code >> 5 + 3) & 0b111   # last 3 bits
 
     return rock_idx[idx], x, y
 
+
+def measure_rocks(rocks: list[tuple[Rock, int, int]]):
+    height = 0
+    for rock, _, y in rocks:
+        height += max(0, rock.height - y)
+    return height
 
 class Cave:
     def __init__(self, lines, part=1, width=7):
@@ -152,7 +158,11 @@ class Cave:
         # convert specs into an int array
         rox = [encode_rock(*spec) for spec in self.rocks]
 
-        return len(rox)
+        start, length = find_cycle(rox)
+
+        cycle_spex = rox[start:start + length]
+
+        return start, [decode_rock(spec) for spec in cycle_spex]
 
     def add_rows(self, n):
         for _ in range(n):
@@ -254,10 +264,6 @@ class Cave:
 
         return self.height
 
-    def find_loop(self):
-        return 0, 0, []  # height of cycle, list of rocks/positions for the cycle
-
-
     def answer2(self, n_rocks=1_000_000_000_000):
         # simulate a bunch of rocks, that should be enough to reveal the pattern
         sim_rocks = 3 * ((len(cave.jet_spec) // 3) * len(rock_sequence))
@@ -266,23 +272,24 @@ class Cave:
             return self.answer()
 
         self.answer(20_000, False)
-        self.analyze_specs()
-
         # search for the loop
-        n_rocks, height = self.find_cycle()
+        cycle_start, cycle = self.analyze_specs()
 
         # measure the preamble
-        preamble_height = 0
+        preamble_height = measure_rocks(self.rocks[:cycle_start])
 
         # calculate the looping parts
-        loops_height = 0
+        rocks_per_cycle = len(cycle)
+        cycle_height = measure_rocks(cycle)
+        cycle_rocks = n_rocks - cycle_start
+        n_cycles = cycle_rocks // rocks_per_cycle
+        cycles_height = n_cycles * cycle_height
+        coda_rocks = cycle_rocks % rocks_per_cycle
 
         # calculate the coda
-        coda_height = 0
+        coda_height = measure_rocks(cycle[:coda_rocks])
 
-        return preamble_height + loops_height + coda_height
-
-        pass
+        return preamble_height + cycles_height + coda_height
 
 
 arg_parser = ArgumentParser('python -m 17.main 17', description="Advent of Code Day 17")
