@@ -73,9 +73,9 @@ def encode_rock(rock: Rock, x: int, y: int):
 
     :return int: The encoded rock outcome
     """
-    rock_comp = rock.idx << (5 + 3) # <8 options, 3 bits
-    x_comp = x << 5                 # <8 options, 3 bits
-    y_comp = y                      # <32 options, 5 bits
+    rock_comp = rock.idx << (5 + 3)  # <8 options, 3 bits
+    x_comp = x << 5                  # <8 options, 3 bits
+    y_comp = y                       # <32 options, 5 bits
     return rock_comp | x_comp | y_comp
 
 
@@ -98,6 +98,7 @@ def measure_rocks(rocks: list[tuple[Rock, int, int]]):
     for rock, _, y in rocks:
         height += max(0, rock.height - y)
     return height
+
 
 class Cave:
     def __init__(self, lines, part=1, width=7):
