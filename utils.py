@@ -168,7 +168,7 @@ def decomp_direction(dir):
 
     :param str dir: The direction to decompose
     :returns (int, int): The unit vector of the specified direction."""
-    return DIR_MAP[dir]
+    return DIR_MAP[dir.upper()]
 
 
 def reduce_vector(x, y):
@@ -231,6 +231,10 @@ class _Pair:
 
     def __eq__(self, other):
         return (self._first, self._second) == other
+
+    def __add__(self, other):
+        o1, o2 = other
+        return self.__class__(self.x + o1, self.y + o2)
 
     def __hash__(self):
         return hash((self._first, self._second))
@@ -376,7 +380,6 @@ class Point(_Pair):
 
 
 class Grid:
-
     def __init__(self, dimensions=(0, 0), origin=(0, 0), offset=(0, 0), value=None, x_axis_spacing=5):
         """Construct the grid
 
