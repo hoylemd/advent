@@ -17,7 +17,7 @@
       "type": "python",
       "request": "launch",
       "env": {
-        "PYTHONPATH": "${relativeFileDirname}/.."
+        "PYTHONPATH": "${workspaceFolder}/.."
       },
       "program": "${file}",
       "args": [
@@ -32,7 +32,7 @@
       "type": "python",
       "request": "launch",
       "env": {
-        "PYTHONPATH": "${relativeFileDirname}/.."
+        "PYTHONPATH": "${workspaceFolder}/.."
       },
       "program": "${file}",
       "args": [
@@ -47,7 +47,7 @@
       "type": "python",
       "request": "launch",
       "env": {
-        "PYTHONPATH": "${relativeFileDirname}/.."
+        "PYTHONPATH": "${workspaceFolder}/.."
       },
       "program": "${file}",
       "args": [
@@ -62,7 +62,7 @@
       "type": "python",
       "request": "launch",
       "env": {
-        "PYTHONPATH": "${relativeFileDirname}/.."
+        "PYTHONPATH": "${workspaceFolder/.."
       },
       "program": "${file}",
       "args": [
