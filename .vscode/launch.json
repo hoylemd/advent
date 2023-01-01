@@ -8,8 +8,6 @@
       "name": "Python: Current File",
       "type": "python",
       "request": "launch",
-      "preLaunchTask": "hide_pipenv",
-      "postDebugTask": "replace_pipenv",
       "program": "${file}",
       "console": "integratedTerminal",
       "justMyCode": true
@@ -18,8 +16,6 @@
       "name": "Test part 1",
       "type": "python",
       "request": "launch",
-      "preLaunchTask": "hide_pipenv",
-      "postDebugTask": "replace_pipenv",
       "env": {
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
@@ -35,8 +31,6 @@
       "name": "Guess part 1",
       "type": "python",
       "request": "launch",
-      "preLaunchTask": "hide_pipenv",
-      "postDebugTask": "replace_pipenv",
       "env": {
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
@@ -52,8 +46,6 @@
       "name": "Test part 2",
       "type": "python",
       "request": "launch",
-      "preLaunchTask": "hide_pipenv",
-      "postDebugTask": "replace_pipenv",
       "env": {
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
@@ -69,8 +61,6 @@
       "name": "Guess part 2",
       "type": "python",
       "request": "launch",
-      "preLaunchTask": "hide_pipenv",
-      "postDebugTask": "replace_pipenv",
       "env": {
         "PYTHONPATH": "${relativeFileDirname}/.."
       },
