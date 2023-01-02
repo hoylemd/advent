@@ -42,6 +42,17 @@ def parse_input(path=None):
         genny = fileinput.input()
 
     return (line.strip() for line in genny)
+
+
+def parse_input_line(path: str = None):
+    """Parse file input into a single string
+
+    See _parse_input_ above, this just joins the lines together and returns them
+
+    :param str path: Path to the file to read from. Optional, will use fileinput if omitted.
+    :return str: The entire contents of the file, without newlines
+    """
+    return ''.join(line for line in parse_input(path))
 # endregion
 
 
