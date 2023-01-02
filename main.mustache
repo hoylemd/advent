@@ -2,16 +2,23 @@ from argparse import ArgumentParser
 from utils import logger, parse_input
 
 
-class Thing:
-    def __init__(self, lines, part):
-        self.part = part
-        self.input = self.parse(lines)
+class {{class}}:
+    def __init__(self, *args: tuple, part=None, **kwargs: dict):
+        self.args = args
+        self.kwargs = kwargs
+        self.part = part or 1
+
+    @classmethod
+    def parse_line(cls, line):
+        return (word for word in line.split())
+
+    @classmethod
+    def parse(cls, lines, line_parser=None, part=1):
+        line_parser = line_parser or cls.parse_line
+        return cls(*(line_parser(line) for line in lines), part=part)
 
     def __str__(self):
-        return '\n'.join(self.input)
-
-    def parse(self, lines):
-        return [line for line in lines]
+        return f"{self.__class__.__name__}(part {self.part})"
 
     def answer(self, *args, **kwargs):
         return 0
@@ -24,9 +31,10 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    thing = Thing(parse_input(argus.input_path), argus.part)
+    {{obj}} = {{class}}.parse(parse_input(argus.input_path), part=argus.part)
 
-    logger.info(thing)
+    logger.info(str({{obj}}))
     logger.debug('')
 
-    print(f"answer:\n{thing.answer()}")
+    answer = {{obj}}.answer(argus.part)
+    print(f"answer:\n{answer}")

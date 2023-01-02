@@ -16,7 +16,7 @@
       "justMyCode": true
     },
     {
-      "name": "Test part 1",
+      "name": "Test 1",
       "type": "python",
       "request": "launch",
       "env": {
@@ -46,7 +46,22 @@
       "justMyCode": true
     },
     {
-      "name": "Test part 2",
+      "name": "Test 2 (test2.txt)",
+      "type": "python",
+      "request": "launch",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "program": "${file}",
+      "args": [
+        "${relativeFileDirname}/test2.txt",
+        "2"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Test 2",
       "type": "python",
       "request": "launch",
       "env": {
