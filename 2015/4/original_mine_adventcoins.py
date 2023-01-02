@@ -16,4 +16,4 @@ number = 0
 while not check_for_gold(swing_pick(key, number)):
     number += 1
 
-print number
+print(number)
