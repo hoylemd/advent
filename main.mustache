@@ -3,10 +3,10 @@ from utils import logger, parse_input
 
 
 class {{class}}:
-    def __init__(self, *args: tuple, part=None, **kwargs: dict):
+    def __init__(self, *args: tuple, part=1, **kwargs: dict):
         self.args = args
         self.kwargs = kwargs
-        self.part = part or 1
+        self.part = part
 
     @classmethod
     def parse_line(cls, line):
@@ -15,7 +15,9 @@ class {{class}}:
     @classmethod
     def parse(cls, lines, line_parser=None, part=1):
         line_parser = line_parser or cls.parse_line
-        return cls(*(line_parser(line) for line in lines), part=part)
+        return cls(
+            (line_parser(line) for line in lines),
+            part=part)
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
