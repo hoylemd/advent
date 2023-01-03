@@ -9,6 +9,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
@@ -20,6 +21,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
@@ -35,6 +37,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
@@ -50,6 +53,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
@@ -65,6 +69,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
@@ -80,6 +85,7 @@
       "type": "python",
       "request": "launch",
       "env": {
+        //"LOG_LEVEL": "DEBUG",
         "PYTHONPATH": "${workspaceFolder}"
       },
       "program": "${file}",
