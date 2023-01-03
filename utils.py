@@ -569,7 +569,11 @@ class Grid:
 
     def __iter__(self):
         """iterator of rows, which can be iterated themselves"""
-        return self.values
+        for row in self.values:
+            yield row
+
+    def __getitem__(self, key):
+        return self.values[key]
 # endregion
 
 
