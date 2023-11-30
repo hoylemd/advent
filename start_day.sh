@@ -19,21 +19,21 @@ if [[ ! "$obj" ]]; then
   obj='thing'
 fi
 
-cat << EOF > temp_data.yml
----
-year: $year
-day: $day
-class: "$class"
-obj: "$obj"
----
+cat << EOF > temp_data.json
+{
+  "year": $year,
+  "day": $day,
+  "class": "$class",
+  "obj": "$obj"
+}
 EOF
 
-mustache temp_data.yml main.mustache > $year/$day/main.py
+mustache temp_data.json main.mustache > $year/$day/main.py
 touch $year/$day/test.txt
 touch $year/$day/test2.txt
 touch $year/$day/input.txt
 
-rm temp_data.yml
+rm temp_data.json
 
 echo "Advent $year day $day ready"
 

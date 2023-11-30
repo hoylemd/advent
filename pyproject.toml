@@ -1,0 +1,22 @@
+# pyproject.toml
+
+[build-system]
+requires = ["poetry-core>=1.0.0,<2.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "advent"
+version = "0.1.0"
+description = "My advent of code solutions"
+authors = ["Mike Hoyle <hoylemd@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+# Add your project dependencies here
+# For example:
+# my_dependency = ">=1.0,<2.0"
+
+[tool.poetry.dev-dependencies]
+flake8 = "*"
+autopep8 = "*"
