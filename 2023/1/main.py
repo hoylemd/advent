@@ -22,10 +22,17 @@ WORD_MAP = {
 }
 
 
-def extractFirstNumber(string: str):
+def extractFirstNumber(string: str, rev=False, only_digits=True):
     for i in range(len(string)):
         if (val := getInt(string[i])) is not None:
             return val
+
+        if only_digits:
+            continue
+        for word, val in WORD_MAP.items():
+            if string[i:].startswith(word[::-1] if rev else word):
+                return val
+    breakpoint()
 
 
 class Thing:
@@ -37,8 +44,8 @@ class Thing:
     def parse_line(cls, line, part=1):
         """extract the first and last digits, combine them into a new number"""
 
-        lval = extractFirstNumber(line)
-        rval = extractFirstNumber(line[::-1])
+        lval = extractFirstNumber(line, only_digits=(part == 1))
+        rval = extractFirstNumber(line[::-1], rev=True, only_digits=(part == 1))
 
         return 10 * lval + rval
 
