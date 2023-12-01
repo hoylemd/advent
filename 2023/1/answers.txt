@@ -1,4 +1,4 @@
 test.txt 1 142
-input.txt 1 -
+input.txt 1 54708
 test.txt 2 -
 input.txt 2 -
