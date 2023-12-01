@@ -13,4 +13,8 @@ if [[ -z "$part" ]] ; then
   part='1'
 fi
 
+if [[ -z "$input" ]] ; then
+  input='test.txt'
+fi
+
 PYTHONPATH="$(pwd)" python -m pdb $year/$day/main.py $year/$day/$input $part $@
