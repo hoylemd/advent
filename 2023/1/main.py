@@ -9,6 +9,25 @@ def getInt(string: str):
         return None
 
 
+WORD_MAP = {
+    'one': 1,
+    'two': 2,
+    'three': 3,
+    'four': 4,
+    'five': 5,
+    'six': 6,
+    'seven': 7,
+    'eight': 8,
+    'nine': 9
+}
+
+
+def extractFirstNumber(string: str):
+    for i in range(len(string)):
+        if (val := getInt(string[i])) is not None:
+            return val
+
+
 class Thing:
     def __init__(self, numbers, part=1):
         self.numbers = numbers
@@ -17,14 +36,9 @@ class Thing:
     @classmethod
     def parse_line(cls, line, part=1):
         """extract the first and last digits, combine them into a new number"""
-        li, ri = 0, -1
-        lval, rval = None, None
 
-        while (lval := getInt(line[li])) is None:
-            li += 1
-
-        while (rval := getInt(line[ri])) is None:
-            ri -= 1
+        lval = extractFirstNumber(line)
+        rval = extractFirstNumber(line[::-1])
 
         return 10 * lval + rval
 
