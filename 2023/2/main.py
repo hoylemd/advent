@@ -17,7 +17,7 @@ def parse_round(spec):
     return round
 
 
-def parse_game(line, part=1):
+def parse_game(line):
     id, cube_spec = line.split(': ')
     id = int(id.split()[1])
 
@@ -45,10 +45,10 @@ def is_game_valid(game):
     return True
 
 
-def sum_valid_games(lines, part=1):
+def sum_valid_games(games):
     result = 0
 
-    for id, game in (parse_game(line, part) for line in lines):
+    for id, game in games:
         logger.info(f"{id}, {game}")
 
         if is_game_valid(game):
@@ -58,6 +58,19 @@ def sum_valid_games(lines, part=1):
     return result
 
 
+def game_power(game_info):
+    power = 1
+    _, game = game_info
+    for _, count in game.items():
+        power *= count
+
+    return power
+
+
+def sum_game_power(games):
+    return sum(game_power(game) for game in games)
+
+
 arg_parser = ArgumentParser('python -m 2023.2.main', description="Advent of Code 2023 Day 2")
 arg_parser.add_argument('input_path', help="Path to the input file")
 arg_parser.add_argument('part', type=int, default=1, help="Which part of the challenge to apply.")
@@ -65,6 +78,10 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    result = sum_valid_games(parse_input(argus.input_path), part=argus.part)
+    games = (parse_game(line) for line in parse_input(argus.input_path))
+    if argus.part == 1:
+        result = sum_valid_games(games)
+    else:
+        result = sum_game_power(games)
 
     print(f"answer:\n{result}")
