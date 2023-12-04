@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from utils import logger, parse_input
+from collections import deque
 
 
 def parse_card(card):
@@ -8,9 +9,13 @@ def parse_card(card):
     return [int(w) for w in winning.split()], [int(h) for h in have.split()]
 
 
+def find_matches(winning, have):
+    logger.debug(f"w: {winning}, h: {have}")
+    return set(winning).intersection(set(have))
+
+
 def score_card(winning, have):
-    logger.info(f"w: {winning}, h: {have}")
-    matches = set(winning).intersection(set(have))
+    matches = find_matches(winning, have)
     score = 2 ** (len(matches) - 1) if matches else 0
 
     logger.info(f"matches: {matches}, score: {score}")
@@ -20,6 +25,32 @@ def score_card(winning, have):
 
 def score_cards(cards):
     return sum(score_card(*parse_card(card)) for card in cards)
+
+
+def tribble_cards(cards):
+    accumulator = 0
+    bonus_cards = deque()
+    card_num = 0
+    for matches in (len(find_matches(*parse_card(card))) for card in cards):
+        card_num += 1
+        try:
+            bonuses = bonus_cards.popleft()
+        except IndexError:
+            bonuses = 0
+        logger.info(f"Card {card_num}: has {bonuses} bonus cards and {matches} matches.")
+
+        copies = 1 + bonuses
+        accumulator += copies
+        logger.info(f"{accumulator} cards so far")
+
+        # add bonuses from this card
+        for i in range(matches):
+            try:
+                bonus_cards[i] += copies
+            except IndexError:
+                bonus_cards.append(copies)
+
+    return accumulator
 
 
 arg_parser = ArgumentParser('python -m 2023.4.main', description="Advent of Code 2023 Day 4")
@@ -34,6 +65,6 @@ if __name__ == '__main__':
     if argus.part == 1:
         answer = score_cards(cards)
     else:
-        answer = None
+        answer = tribble_cards(cards)
 
     print(f"answer:\n{answer}")
