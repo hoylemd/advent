@@ -1,29 +1,24 @@
 from argparse import ArgumentParser
 from utils import logger, parse_input
+from typing import Iterator
 
 
-class {{class}}:
-    def __init__(self, *args: tuple, part=1, **kwargs: dict):
-        self.args = args
-        self.kwargs = kwargs
-        self.part = part
+def {{part_2_function}}({{doc_name}}: Iterator[str]) -> int:
+    accumulator = 0
 
-    @classmethod
-    def parse_line(cls, line):
-        return (word for word in line.split())
+    for line in {{doc_name}}:
+        pass
 
-    @classmethod
-    def parse(cls, lines, line_parser=None, part=1):
-        line_parser = line_parser or cls.parse_line
-        return cls(
-            (line_parser(line) for line in lines),
-            part=part)
+    return accumulator
 
-    def __str__(self):
-        return f"{self.__class__.__name__}(part {self.part})"
 
-    def answer(self, *args, **kwargs):
-        return 0
+def {{part_1_function}}({{doc_name}}: Iterator[str]) -> int:
+    accumulator = 0
+
+    for line in {{doc_name}}:
+        pass
+
+    return accumulator
 
 
 arg_parser = ArgumentParser('python -m {{year}}.{{day}}.main', description="Advent of Code {{ year }} Day {{ day }}")
@@ -33,10 +28,12 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    {{obj}} = {{class}}.parse(parse_input(argus.input_path), part=argus.part)
+    {{doc_name}} = parse_input(argus.input_path)
+    if argus.part == 1:
+        answer = {{part_1_function}}({{doc_name}})
+    else:
+        answer = {{part_2_function}}({{doc_name}})
 
-    logger.info(str({{obj}}))
     logger.debug('')
 
-    answer = {{obj}}.answer(argus.part)
     print(f"answer:\n{answer}")
