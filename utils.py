@@ -112,7 +112,7 @@ def render_grid(grid, shader=str):
 # endregion
 
 
-# region === Number rendering ===
+# region === Number rendering/parsing ===
 def num_width(number):
     """Given a number, compute it's width in characters when rendered.
 
@@ -158,6 +158,14 @@ def seconds_to_string(secs: int):
     mins = mins - hrs * 60
 
     return f"{hrs}:{mins:02}:{secs:02}"
+
+
+def get_int(string: str):
+    """Parse an int out of a string, if there is one"""
+    try:
+        return int(string)
+    except ValueError:  # invalid literal for int
+        return None
 # endregion
 
 
@@ -577,7 +585,7 @@ class Grid:
 # endregion
 
 
-INFINITY = 9_999_999_999
+INFINITY = 999_999_999_999_999
 
 
 # region === Lists & bitmask ===
