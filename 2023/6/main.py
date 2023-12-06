@@ -34,6 +34,13 @@ class Race:
         return distance_button_time(self.time, self.best_distance)[0]
 
 
+def parse_bad_kerning(lines: Iterator[str]):
+    time_parts = ''.join(next(lines).split()[1:])
+    dist_parts = ''.join(next(lines).split()[1:])
+
+    return int(time_parts), int(dist_parts)
+
+
 class Scoreboard:
     def __init__(self, lines: Iterator[str]):
         time_line = next(lines)
@@ -42,10 +49,20 @@ class Scoreboard:
         self.races = [Race(int(t), int(d)) for t, d in zip(time_line.split()[1:], dist_line.split()[1:])]
 
 
-def answer_second_part(scoreboard: Scoreboard) -> int:
-    accumulator = 0
-
-    return accumulator
+def count_ways_to_win(race: Race) -> int:
+    # optimal time is always `time / 2`
+    # calculate time for current best
+    # ways to win is optimal - current best * 2
+    optimal_time = race.time / 2
+    min_win_time = ceil(race.current_best_time)
+    if min_win_time == race.current_best_time:
+        min_win_time += 1
+    ways_to_win = (
+        (race.time + 1)  # total options
+        - (min_win_time * 2)  # both sets of losing button times
+    )
+    logger.info(f"optimal: {optimal_time}, minimum win: {min_win_time}, ways to win: {ways_to_win}")
+    return ways_to_win
 
 
 def race_options(race):
@@ -60,19 +77,7 @@ def mult_ways_to_win(scoreboard: Scoreboard) -> int:
     accumulator = 1
 
     for race in scoreboard.races:
-        # optimal time is always `time / 2`
-        # calculate time for current best
-        # ways to win is optimal - current best * 2
-        optimal_time = race.time / 2
-        min_win_time = ceil(race.current_best_time)
-        if min_win_time == race.current_best_time:
-            min_win_time += 1
-        ways_to_win = (
-            (race.time + 1)  # total options
-            - (min_win_time * 2)  # both sets of losing button times
-        )
-        logger.info(f"optimal: {optimal_time}, minimum win: {min_win_time}, ways to win: {ways_to_win}")
-        accumulator *= ways_to_win
+        accumulator *= count_ways_to_win(race)
         # race_options(race)
         logger.info('')
 
@@ -86,11 +91,12 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    scoreboard = Scoreboard(parse_input(argus.input_path))
     if argus.part == 1:
+        scoreboard = Scoreboard(parse_input(argus.input_path))
         answer = mult_ways_to_win(scoreboard)
     else:
-        answer = answer_second_part(scoreboard)
+        race = Race(*parse_bad_kerning(parse_input(argus.input_path)))
+        answer = count_ways_to_win(race)
 
     logger.debug('')
 
