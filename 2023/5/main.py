@@ -29,7 +29,6 @@ class Mapping:
 
         if lbound < self.anchor:
             if lbound + length <= self.anchor:
-                logger.info('      all below')
                 return None  # entire range is below this mapping
 
             skipped = self.anchor - lbound
@@ -39,7 +38,6 @@ class Mapping:
             length -= skipped
 
         if lbound > self.end:
-            logger.info('       all above')
             return None  # entire range is above this mapping
 
         remaining = 0
@@ -92,7 +90,11 @@ class Map:
                 continue  # this mapping doesn't apply
 
             skipped, mapped_lbound, mapped_length, remaining = map_results
-            logger.info(f"    matched! {skipped} skipped, {expand_range(mapped_lbound, mapped_length)}, {remaining} left")
+            logger.info(
+                f"    matched! {skipped} skipped, "
+                f"{expand_range(mapped_lbound, mapped_length)}, "
+                f"{remaining} left"
+            )
 
             if skipped:
                 ranges.append((lbound, skipped,))
@@ -185,9 +187,9 @@ def find_least_location_from_ranges(almanac: Almanac) -> int:
     lowest_location = INFINITY
 
     for lbound, length in almanac.seed_ranges:
-        logger.info(f"{lbound}, {length}, current least: {lowest_location}")
+        logger.info(f"{expand_range(lbound, length)}, current least: {lowest_location}")
         least_for_range = almanac.map_range(lbound, length)
-        logger.info(f"least for range {lbound}, {length}: {least_for_range}")
+        logger.info(f"least for range {expand_range(lbound, length)}: {least_for_range}")
         lowest_location = min(lowest_location, least_for_range)
 
     return lowest_location
