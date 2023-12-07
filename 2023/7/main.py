@@ -12,6 +12,7 @@ def parse_hand_line(line: str, part=1) -> Tuple[str, int]:
     return h, int(b), part
 
 
+# string lookups in dicts are actually quite a but faster than parsing the digit
 CARD_VALUES = {c: int(c) for c in '23456789'} | {
     'T': 10,
     'J': 11,
