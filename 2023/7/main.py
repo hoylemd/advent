@@ -5,9 +5,11 @@ from collections import defaultdict
 from functools import cmp_to_key
 
 
-def parse_hand_line(line: str) -> Tuple[str, int]:
+def parse_hand_line(line: str, part=1) -> Tuple[str, int]:
     h, b = line.split()
-    return h, int(b)
+    if part > 1:
+        h = h.replace('J', 'j')
+    return h, int(b), part
 
 
 CARD_VALUES = {c: int(c) for c in '23456789'} | {
@@ -15,19 +17,25 @@ CARD_VALUES = {c: int(c) for c in '23456789'} | {
     'J': 11,
     'Q': 12,
     'K': 13,
-    'A': 14
+    'A': 14,
+    'j': 1  # special joker value
 }
-print(CARD_VALUES)
 
 
 class Hand:
-    def __init__(self, hand_spec: str, bid: int):
+    def __init__(self, hand_spec: str, bid: int, part=1):
         self.bid = bid
         self._hand_spec = hand_spec
 
         types = defaultdict(int)
         for card in hand_spec:
             types[card] += 1
+
+        if part > 1 and 'j' in types and len(types) > 1:
+            jokers = types['j']
+            del types['j']
+            best_type = sorted(types.items(), key=lambda x: (x[1], x[0]))[-1][0]
+            types[best_type] += jokers
 
         type_counts = sorted(types.values())
         match len(type_counts):
@@ -75,15 +83,6 @@ def compare_hands(left: Hand, right: Hand):
     return 0
 
 
-def answer_second_part(lines: Iterator[str]) -> int:
-    accumulator = 0
-
-    for line in lines:
-        pass
-
-    return accumulator
-
-
 def sub_bids_times_rank(hands: list[Hand]) -> int:
     hands.sort(key=cmp_to_key(compare_hands))
 
@@ -104,11 +103,8 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    hands = [Hand(*parse_hand_line(line)) for line in parse_input(argus.input_path)]
-    if argus.part == 1:
-        answer = sub_bids_times_rank(hands)
-    else:
-        answer = answer_second_part(hands)
+    hands = [Hand(*parse_hand_line(line, argus.part)) for line in parse_input(argus.input_path)]
+    answer = sub_bids_times_rank(hands)
 
     logger.debug('')
 
