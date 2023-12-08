@@ -66,7 +66,11 @@ class Hand:
         return f"{self._hand_spec}: {self.strength}, bid {self.bid}"
 
 
+COMPARISONS = {'count': 0}
+
+
 def compare_hands(left: Hand, right: Hand):
+    COMPARISONS['count'] += 1
     if left.strength < right.strength:
         return -1
     elif left.strength > right.strength:
@@ -110,3 +114,4 @@ if __name__ == '__main__':
     logger.debug('')
 
     print(f"answer:\n{answer}")
+    print(f"comparisons: {COMPARISONS['count']}")
