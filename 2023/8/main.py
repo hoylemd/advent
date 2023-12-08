@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from utils import logger, parse_input
-from typing import Iterator, Tuple
+from typing import Tuple
+from dataclasses import dataclass
 
 
 def parse_node_spec(line: str) -> Tuple[str, str, str]:
@@ -12,11 +13,12 @@ def parse_node_spec(line: str) -> Tuple[str, str, str]:
 class NodeMap:
     def __init__(self, node_specs):
         self.nodes = {}
+        self.paths = {}
 
         for node, l_node, r_node in node_specs:
             self.nodes[node] = {'L': l_node, 'R': r_node}
 
-    def walk_route(self, start: str, end: str, route: str):
+    def walk_route(self, start: str, end: str, route: str) -> int:
         step = 0
         current_node = start
 
@@ -29,14 +31,74 @@ class NodeMap:
 
         return step
 
+    def quantum_walk_route(self, route: str) -> int:
+        step = 0
+        ghosts = {node: Ghost(self, node, route) for node in self.nodes}
 
-def answer_second_part(lines: Iterator[str]) -> int:
-    accumulator = 0
+        for _, ghost in ghosts.items():
+            logger.info(ghost)
+        # scan and populate cursors
 
-    for line in lines:
-        pass
+        return step
 
-    return accumulator
+
+@dataclass
+class GhostPath:
+    start_node: str
+    start_index: int
+    length: int
+    end_node: str
+
+    def __str__(self) -> str:
+        return f"({self.start_node}, {self.start_index})-({self.length})>{self.end_node}"
+
+
+@dataclass
+class Ghost:
+    map: NodeMap
+    start_node: str
+    route: str
+
+    def __post_init__(self):
+        self.paths = []
+        started = False
+        current_node = self.start_node
+        current_index = 0
+        while not started and current_node != self.start_node and current_index:
+            started = True
+            if next_path := self.map.paths.get((current_node, current_index)):
+                logger.info(f"seen {next_path}")
+                # current situation seen before, skip on!
+                current_node = next_path.end_node
+                current_index = (current_index + next_path.length) % len(self.route)
+            else:
+                next_path = self.get_path(current_node, current_index)
+                self.map.paths[current_node, current_index] = next_path
+            self.paths.append(next_path)
+
+    def get_path(self, start_node: str, start_index: int) -> GhostPath:
+        step = 0
+        current_node = start_node
+        started = False
+        while not started and current_node[-1] != 'Z':
+            started = True
+            next_direction = self.route[(start_index + step) % len(self.route)]
+            next_node = self.map.nodes[current_node][next_direction]
+            logger.info(f"Step {step}: At {current_node}, going {next_direction}, to {next_node}")
+            step += 1
+
+        return GhostPath(start_node, start_index, step, current_node)
+
+    @property
+    def path_lengths(self) -> list[int]:
+        return [path.length for path in self.paths]
+
+    def __str__(self) -> str:
+        return f"Ghost {self.start_node} with {len(self.paths)} paths in cycle, of total length {sum(self.path_lengths)}"
+
+
+def count_quantum_steps(route: str, map: NodeMap) -> int:
+    return map.quantum_walk_route(route)
 
 
 def count_steps(route: str, map: NodeMap) -> int:
@@ -62,7 +124,7 @@ if __name__ == '__main__':
     if argus.part == 1:
         answer = count_steps(route, map)
     else:
-        answer = answer_second_part(lines)
+        answer = count_quantum_steps(route, map)
 
     logger.debug('')
 
