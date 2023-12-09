@@ -1,7 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
-from typing import Iterator, Generator
+from typing import Iterator, Generator, Callable, Optional, Any
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -10,6 +10,7 @@ logger.setLevel(LOG_LEVEL)
 ch = logging.StreamHandler()
 ch.setLevel(LOG_LEVEL)
 logger.addHandler(ch)
+
 # endregion
 
 
@@ -25,7 +26,7 @@ def _read_file(path: str) -> Generator[str, None, None]:
             yield line
 
 
-def parse_input(path: str = None) -> Generator[str, None, None]:
+def parse_input(path: Optional[str] = None) -> Generator[str, None, None]:
     """Parse file input into stripped lines.
 
     If path is provided, will use regular python file reading.
@@ -45,7 +46,7 @@ def parse_input(path: str = None) -> Generator[str, None, None]:
     return (line.strip() for line in genny)
 
 
-def parse_input_line(path: str = None) -> str:
+def parse_input_line(path: Optional[str] = None) -> str:
     """Parse file input into a single string
 
     See _parse_input_ above, this just joins the lines together and returns them
@@ -54,6 +55,8 @@ def parse_input_line(path: str = None) -> str:
     :return str: The entire contents of the file, without newlines
     """
     return ''.join(line for line in parse_input(path))
+
+
 # endregion
 
 
@@ -68,15 +71,17 @@ def noop(*args, **kwargs):
     :returns list, dict: The arguments passed in
     """
     return args, kwargs
+
+
 # endregion
 
 
 # region === Grid rendering ===
-def render_line(line: str, shader: callable = str) -> str:
+def render_line(line: str, shader: Callable = str) -> str:
     """Render all elements of an array together into a string.
 
     Used primarily for rendering grid lines.
-    Provide a `shader` callable to mutate the elements before rendering them.
+    Provide a `shader` Callable to mutate the elements before rendering them.
 
     :param list line: The array of elements to render together
     :param callable shader: Callable to mutate elements before rendering them together, optional
@@ -86,7 +91,7 @@ def render_line(line: str, shader: callable = str) -> str:
     return ''.join(shader(c) for c in line)
 
 
-def render_lines(lines: Iterator[str], shader: callable = str) -> Generator[str, None, None]:
+def render_lines(lines: Iterator[str], shader: Callable = str) -> Generator[str, None, None]:
     """Pluralizer for render_line.
 
     see render_line for details
@@ -110,6 +115,8 @@ def render_grid(grid, shader=str):
     :returns str: The rendered grid
     """
     return '\n'.join(render_lines(grid, shader))
+
+
 # endregion
 
 
@@ -167,8 +174,9 @@ def get_int(string: str):
         return int(string)
     except ValueError:  # invalid literal for int
         return None
-# endregion
 
+
+# endregion
 
 # region === Point helpers ===
 DIR_MAP = {
@@ -225,6 +233,8 @@ def vector(start, dest):
     :returns (int, int): Vector from `start` to `dest`
     """
     return dest[0] - start[0], dest[1] - start[1]
+
+
 # endregion
 
 
@@ -258,7 +268,7 @@ class _Pair:
 
     def __add__(self, other):
         o1, o2 = other
-        return self.__class__(self.x + o1, self.y + o2)
+        return self.__class__(self._first + o1, self._second + o2)
 
     def __hash__(self):
         return hash((self._first, self._second))
@@ -381,7 +391,7 @@ class Point(_Pair):
     def __repr__(self):
         return f"<{self.x},{self.y}>"
 
-    def vector_to(self, *args):
+    def vector_to(self, *args: Any):
         """Given another point (or x,y coordinates), determine the vector to that point
 
         usage:
@@ -391,7 +401,7 @@ class Point(_Pair):
         if len(args) == 1 and isinstance(args[0], Point):
             x, y = args[0]
         else:
-            x, y = args
+            x, y = args  # type: ignore
         return Point(*vector(self, (x, y)))
 
     def taxi_to(self, *args):
@@ -407,6 +417,8 @@ class Point(_Pair):
 
 
 class Grid:
+    values: list[list]
+
     def __init__(self, dimensions=(0, 0), origin=(0, 0), offset=(0, 0), value=None, x_axis_spacing=5):
         """Construct the grid
 
@@ -489,10 +501,7 @@ class Grid:
     def init_grid(self, value=None):
         """actually create the values object"""
         self._header = None
-        self.values = [
-            [value] * self.width
-            for _ in range(self.height)
-        ]
+        self.values = [[value] * self.width for _ in range(self.height)]
         self.ready = True
 
     def get(self, x, y=None):
@@ -538,9 +547,7 @@ class Grid:
         left = f"{get_char(self.x_bounds[0])}{' ' * (min(spacing, self.x_bounds[1] - self.x_bounds[0]) - 1)}"
         # inner parts
         marks = [m + self.x_bounds[0] for m in range(spacing, self.width, self.x_axis_spacing)]
-        inner = (' ' * spacing).join(
-            get_char(j) for j in marks
-        )
+        inner = (' ' * spacing).join(get_char(j) for j in marks)
         try:
             last_mark = marks[-1]
         except IndexError:
@@ -562,7 +569,7 @@ class Grid:
         return [self.header_line(i, margin, width) for i in range(width)]
 
     def __str__(self):
-        lines = [line for line in render_lines(self.values)]
+        lines = [line for line in render_lines(self.values)]  # type: ignore
         margin = max(num_width(self.y_bounds[0]), num_width(self.y_bounds[1]))
         stamp = f"{{n:0{margin}}} {{line}}"
 
@@ -583,13 +590,14 @@ class Grid:
 
     def __getitem__(self, key):
         return self.values[key]
-# endregion
 
+
+# endregion
 
 INFINITY = 999_999_999_999_999
 
-
 # region === Lists & bitmask ===
+
 
 def list_from_mask(the_list: list, mask: int):
     """Given a list and bitmask, return a list of only the elements represented by the bitmask
@@ -602,7 +610,7 @@ def list_from_mask(the_list: list, mask: int):
 
     :return list: The filtered list
     """
-    return [item for i, item in enumerate(the_list) if mask & 2 ** i]
+    return [item for i, item in enumerate(the_list) if mask & 2**i]
 
 
 def mask_from_list(the_list: list, elements: list):
@@ -616,7 +624,7 @@ def mask_from_list(the_list: list, elements: list):
     mask = 0
     for i, item in enumerate(the_list):
         if the_list[i] in elements:
-            mask |= 2 ** i
+            mask |= 2**i
 
     return mask
 
@@ -668,7 +676,7 @@ def find_cycle(seq: list[int]):
         length += 1
         window_start = total_len - length
         window = seq[window_start:]
-        if window == seq[window_start - length: window_start]:
+        if window == seq[window_start - length:window_start]:
             break
         if length > total_len / 2:
             raise IndexError('No repeating cycle found')
@@ -680,6 +688,7 @@ def find_cycle(seq: list[int]):
         idx += 1
 
     # step three: walk backwards and rotate to find the true start index
+    r = 0
     for r in range(length):
         rot = r + 1
         n_win = rotate_list(window, -rot)
@@ -688,4 +697,6 @@ def find_cycle(seq: list[int]):
             break
 
     return idx - r, length
+
+
 # endregion

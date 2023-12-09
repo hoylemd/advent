@@ -17,4 +17,5 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "eeyore.yapf",
     },
+    "python.analysis.typeCheckingMode": "basic"
 }
