@@ -5,63 +5,54 @@ shift
 day=$1
 shift
 template='main.mustache'
-if [[ "$1" == "--OO" ]]; then
-  template='main_oo.mustache'
-  shift
-  class=$1
-  shift
-  obj=$1
-  shift
-else
-  p1_function=$1
-  shift
-  doc_name=$1
-  shift
-  p2_function=$1
-  shift
-fi
 
-mkdir -p $year/$day
+declare -A my_array
 
-if [[ ! "$class" ]]; then
-  class='Thing'
-fi
-
-if [[ ! "$obj" ]]; then
-  obj='thing'
-fi
-
-if [[ ! "$p1_function" ]]; then
-  p1_function='answer_first_part'
-fi
-
-if [[ ! "$doc_name" ]]; then
-  doc_name='lines'
-fi
-
-if [[ ! "$p2_function" ]]; then
-  p2_function='answer_second_part'
-fi
-
-cat << EOF > temp_data.json
-{
-  "year": $year,
-  "day": $day,
-  "class": "$class",
-  "obj": "$obj",
-  "part_1_function": "$p1_function",
-  "doc_name": "$doc_name",
-  "part_2_function": "$p2_function"
-}
+while IFS= read -r line; do
+    IFS='=' read -r key value <<< "$line"
+    my_array["$key"]="$value"
+done <<EOF
+year=$year
+day=$day
+class=Thing
+obj=thing
+doc_name=lines
+element=element
+p1_function=answer1
+p2_function=answer2
 EOF
 
+# Create an associative array to store key/value pairs
+declare -A kv_pairs
 
-mustache temp_data.json $template > $year/$day/main.py
-touch $year/$day/test.txt
-touch $year/$day/test2.txt
-touch $year/$day/input.txt
+# Parse key/value pairs and store them in the array
+for arg in "$@"; do
+    IFS='=' read -r key value <<< "$arg"
+    kv_pairs["$key"]="$value"
+done
 
-cat << EOF > $year/$day/answers.txt
+for key in "${!kv_pairs[@]}"; do
+    my_array["$key"]="${kv_pairs["$key"]}"
+done
+
+# Convert associative array to JSON format
+json_data="{"
+for key in "${!my_array[@]}"; do
+    json_data+="\"$key\":\"${my_array[$key]}\","
+done
+json_data="${json_data%,}"  # Remove trailing comma
+json_data+="}"
+
+echo "$json_data" > temp_data.json
+
+mkdir -p "$year/$day"
+
+mustache temp_data.json $template > "$year/$day/main.py"
+touch "$year/$day/test.txt"
+touch "$year/$day/test2.txt"
+touch "$year/$day/input.txt"
+
+cat << EOF > "$year/$day/answers.txt"
 test.txt 1 -
 input.txt 1 -
 test.txt 2 -
@@ -72,4 +63,4 @@ rm temp_data.json
 
 echo "Advent $year day $day ready"
 
-code $year/$day/main.py
+code "$year/$day/main.py"

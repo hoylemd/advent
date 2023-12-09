@@ -3,7 +3,22 @@ from utils import logger, parse_input
 from typing import Iterator
 
 
-def {{part_2_function}}({{doc_name}}: Iterator[str]) -> int:
+def parse_line(line: str):
+    return line.split()
+
+
+class {{class}}:
+
+    def __init__(self, lines: Iterator[str], part: int = 1):
+        self.part = part
+
+        self.{{element}}s = (parse_line(line) for line in lines)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(part {self.part})"
+
+
+def {{p2_function}}({{doc_name}}: Iterator[str]) -> int:
     accumulator = 0
 
     for line in {{doc_name}}:
@@ -12,7 +27,7 @@ def {{part_2_function}}({{doc_name}}: Iterator[str]) -> int:
     return accumulator
 
 
-def {{part_1_function}}({{doc_name}}: Iterator[str]) -> int:
+def {{p1_function}}({{doc_name}}: Iterator[str]) -> int:
     accumulator = 0
 
     for line in {{doc_name}}:
@@ -29,10 +44,11 @@ if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
     {{doc_name}} = parse_input(argus.input_path)
+    {{obj}} = {{class}}({{doc_name}})
     if argus.part == 1:
-        answer = {{part_1_function}}({{doc_name}})
+        answer = {{p1_function}}({{obj}}, argus.part)
     else:
-        answer = {{part_2_function}}({{doc_name}})
+        answer = {{p2_function}}({{obj}}, argus.part)
 
     logger.debug('')
 
