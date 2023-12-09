@@ -6,6 +6,16 @@ day=$1
 shift
 template='main.mustache'
 
+if [[ -z "$year" ]]; then
+    echo "need a year"
+    exit 1
+fi
+
+if [[ -z "$day" ]]; then
+    echo "need a day"
+    exit 1
+fi
+
 declare -A my_array
 
 while IFS= read -r line; do
@@ -22,22 +32,17 @@ p1_function=answer1
 p2_function=answer2
 EOF
 
-# Create an associative array to store key/value pairs
-declare -A kv_pairs
-
 # Parse key/value pairs and store them in the array
 for arg in "$@"; do
     IFS='=' read -r key value <<< "$arg"
-    kv_pairs["$key"]="$value"
-done
-
-for key in "${!kv_pairs[@]}"; do
-    my_array["$key"]="${kv_pairs["$key"]}"
+    echo "overriding $key = $value"
+    my_array["$key"]="$value"
 done
 
 # Convert associative array to JSON format
 json_data="{"
 for key in "${!my_array[@]}"; do
+    echo "converting $key : ${my_array[$key]}"
     json_data+="\"$key\":\"${my_array[$key]}\","
 done
 json_data="${json_data%,}"  # Remove trailing comma
