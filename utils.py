@@ -1,6 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
+from typing import Iterator, Generator
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -13,7 +14,7 @@ logger.addHandler(ch)
 
 
 # region === File IO ===
-def _read_file(path):
+def _read_file(path: str) -> Generator[str, None, None]:
     """Just emit lines from a file path
 
     :param str path: Path to the file to read from
@@ -24,7 +25,7 @@ def _read_file(path):
             yield line
 
 
-def parse_input(path=None):
+def parse_input(path: str = None) -> Generator[str, None, None]:
     """Parse file input into stripped lines.
 
     If path is provided, will use regular python file reading.
@@ -44,7 +45,7 @@ def parse_input(path=None):
     return (line.strip() for line in genny)
 
 
-def parse_input_line(path: str = None):
+def parse_input_line(path: str = None) -> str:
     """Parse file input into a single string
 
     See _parse_input_ above, this just joins the lines together and returns them
@@ -71,7 +72,7 @@ def noop(*args, **kwargs):
 
 
 # region === Grid rendering ===
-def render_line(line, shader=str):
+def render_line(line: str, shader: callable = str) -> str:
     """Render all elements of an array together into a string.
 
     Used primarily for rendering grid lines.
@@ -85,7 +86,7 @@ def render_line(line, shader=str):
     return ''.join(shader(c) for c in line)
 
 
-def render_lines(lines, shader=str):
+def render_lines(lines: Iterator[str], shader: callable = str) -> Generator[str, None, None]:
     """Pluralizer for render_line.
 
     see render_line for details
