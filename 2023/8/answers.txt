@@ -1,5 +1,8 @@
 test.txt 1 2
 test2.txt 1 6
 input.txt 1 18157
-test.txt 2 -
-input.txt 2 -
+test.txt 2 2
+test2.txt 2 6
+test3.txt 2 6
+test4.txt 2 30
+input.txt 2 14299763833181

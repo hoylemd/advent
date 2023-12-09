@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from utils import logger, parse_input
 from typing import Tuple
 from dataclasses import dataclass
+from math import lcm
 
 
 def parse_node_spec(line: str) -> Tuple[str, str, str]:
@@ -32,14 +33,15 @@ class NodeMap:
         return step
 
     def quantum_walk_route(self, route: str) -> int:
-        step = 0
-        ghosts = {node: Ghost(self, node, route) for node in self.nodes}
+        ghosts = {node: Ghost(self, node, route) for node in self.nodes if node[-1] == 'A'}
 
         for _, ghost in ghosts.items():
             logger.info(ghost)
-        # scan and populate cursors
 
-        return step
+        # get least common multiple of cycle lengths?
+        path_lengths = [sum(ghost.path_lengths) for ghost in ghosts.values()]
+        return lcm(*path_lengths)
+
 
 
 @dataclass
@@ -64,7 +66,8 @@ class Ghost:
         started = False
         current_node = self.start_node
         current_index = 0
-        while not started and current_node != self.start_node and current_index:
+
+        while not started or current_node != self.start_node and current_index:
             started = True
             if next_path := self.map.paths.get((current_node, current_index)):
                 logger.info(f"seen {next_path}")
@@ -73,6 +76,7 @@ class Ghost:
                 current_index = (current_index + next_path.length) % len(self.route)
             else:
                 next_path = self.get_path(current_node, current_index)
+                logger.info(f"new path {next_path}")
                 self.map.paths[current_node, current_index] = next_path
             self.paths.append(next_path)
 
@@ -80,12 +84,13 @@ class Ghost:
         step = 0
         current_node = start_node
         started = False
-        while not started and current_node[-1] != 'Z':
+        while not started or current_node[-1] != 'Z':
             started = True
             next_direction = self.route[(start_index + step) % len(self.route)]
             next_node = self.map.nodes[current_node][next_direction]
             logger.info(f"Step {step}: At {current_node}, going {next_direction}, to {next_node}")
             step += 1
+            current_node = next_node
 
         return GhostPath(start_node, start_index, step, current_node)
 
