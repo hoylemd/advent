@@ -12,6 +12,7 @@ def parse_node_spec(line: str) -> Tuple[str, str, str]:
 
 
 class NodeMap:
+
     def __init__(self, node_specs):
         self.nodes = {}
         self.paths = {}
@@ -41,7 +42,6 @@ class NodeMap:
         # get least common multiple of cycle lengths?
         path_lengths = [sum(ghost.path_lengths) for ghost in ghosts.values()]
         return lcm(*path_lengths)
-
 
 
 @dataclass
