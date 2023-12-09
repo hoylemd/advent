@@ -1,0 +1,20 @@
+{
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "trailing-spaces.deleteModifiedLinesOnly": true,
+    "trailing-spaces.trimOnSave": true,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+    },
+    "editor.rulers": [
+        80, 100, 120
+    ],
+    "python.terminal.activateEnvironment": false,
+    "[python]": {
+        "editor.formatOnType": false,
+        "editor.formatOnSaveMode": "file",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "eeyore.yapf",
+    },
+}

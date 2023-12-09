@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-python.flake8",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "eeyore.yapf",
+        "shardulm94.trailing-spaces"
+    ]
+}
