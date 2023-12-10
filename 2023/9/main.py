@@ -18,31 +18,49 @@ class Oasis:
         return f"{self.__class__.__name__}(part {self.part})"
 
 
-def answer2(oasis: Oasis) -> int:
-    accumulator = 0
-
-    return accumulator
-
-
-def predict_next_value(history: list[int]) -> int:
+def find_derivatives(history: list[int]) -> list[list[int]]:
     derivatives = [history]
+
+    logger.info(f"deriving from:\n{history}")
 
     while len(prev_level := derivatives[-1]) > 1:
         next_derivative = [prev_level[i] - prev_level[i - 1] for i in range(1, len(prev_level))]
+        logger.info(f"{'  ' * len(derivatives)}{next_derivative}")
         derivatives.append(next_derivative)
 
         if len(set(next_derivative)) <= 1:
             break
 
+    return derivatives
+
+
+def predict_next_value(history: list[int]) -> int:
+    derivatives = find_derivatives(history)
+
     prediction = 0
     for derivative in derivatives[::-1]:
-        prediction += derivative[-1]
+        delta = derivative[-1]
+        prediction += delta
 
     return prediction
 
 
-def sum_predictions(oasis: Oasis) -> int:
-    return sum(predict_next_value(history) for history in oasis.histories)
+def predict_first_value(history: list[int]) -> int:
+    derivatives = find_derivatives(history)
+
+    delta = 0
+    for derivative in derivatives[::-1]:
+        logger.info(f"predicting first value for {derivative}")
+        delta = derivative[0] - delta
+        logger.info(f"-> {delta}")
+
+    return delta
+
+
+def sum_predictions(oasis: Oasis, part: int = 1) -> int:
+    strategy = predict_next_value if part == 1 else predict_first_value
+
+    return sum(strategy(history) for history in oasis.histories)
 
 
 arg_parser = ArgumentParser('python -m 2023.9.main', description="Advent of Code 2023 Day 9")
@@ -54,10 +72,7 @@ if __name__ == '__main__':
 
     histories = parse_input(argus.input_path)
     oasis = Oasis(histories)
-    if argus.part == 1:
-        answer = sum_predictions(oasis)
-    else:
-        answer = answer2(oasis)
+    answer = sum_predictions(oasis, argus.part)
 
     logger.debug('')
 
