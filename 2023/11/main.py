@@ -9,7 +9,7 @@ def parse_line(line: str):
 
 class GalaxyMap:
 
-    def __init__(self, lines: Iterator[str], expansion: int = 0):
+    def __init__(self, lines: Iterator[str], expansion: int = 1):
         self.expansion = expansion
         self.galaxies = {}
 
@@ -86,18 +86,15 @@ def sum_galaxy_separations(map: GalaxyMap) -> int:
 
 arg_parser = ArgumentParser('python -m 2023.11.main', description="Advent of Code 2023 Day 11")
 arg_parser.add_argument('input_path', help="Path to the input file")
-arg_parser.add_argument('part', type=int, default=1, help="Which part of the challenge to apply.")
+arg_parser.add_argument('expansion_factor', type=int, default=2, help="how many times to expand blank rows/cols")
 
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
     lines = parse_input(argus.input_path)
-    map = GalaxyMap(lines, 1)
+    map = GalaxyMap(lines, argus.expansion_factor)
     logger.info(map.render_grid())
-    if argus.part == 1:
-        answer = sum_galaxy_separations(map)
-    else:
-        answer = answer2(map)
+    answer = sum_galaxy_separations(map)
 
     logger.debug('')
 
