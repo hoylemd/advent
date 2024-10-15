@@ -1,0 +1,60 @@
+name: Bug
+description: Report a functional problem with a Crowdmark application
+labels: ["Bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: briefly explain the problem and any consequences or implications
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Repro
+      description: Describe step-by-step how to reproduce the issue (If you can't, consider using the error report form instead)
+      value: |
+        ### Setup
+
+        What needs to be done in advance of the following repro steps?
+
+        ### Steps
+
+        1. step one
+        2. step two
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: What should happen after following the above steps?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What Actually happens when you follow the above steps (include screenshots or recordings here if you have them!)
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority level
+      description: What Priority level is this bug? (See product meeting tracker for definitions)
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+  - type: textarea
+    id: other
+    attributes:
+      label: Other
+      description: Any information to add that doesn't fit above?
+    validations:
+      required: false
