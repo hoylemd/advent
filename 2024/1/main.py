@@ -1,42 +1,41 @@
 from argparse import ArgumentParser
 from utils import logger, parse_input
 from typing import Iterator
+from collections import defaultdict
 
 
 def parse_line(line: str) -> tuple:
-    first, second = line.split()
-    return int(first), int(second)
+    left, right = line.split()
+    return int(left), int(right)
 
 
 class Bilist:
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
-        self.first_list = []
-        self.second_list = []
+        self.left_list = []
+        self.right_list = []
+        self.right_counts = defaultdict(int)
 
-        for first, second in (parse_line(line) for line in lines):
-            print(f"parsing out {first}, {second}")
-            self.first_list.append(first)
-            self.second_list.append(second)
+        for left, right in (parse_line(line) for line in lines):
+            print(f"parsing out {left}, {right}")
+            self.left_list.append(left)
+            self.right_list.append(right)
+            self.right_counts[right] += 1
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
 
 
-def answer2(bilist: Bilist) -> int:
+def sum_similarity(bilist: Bilist) -> int:
+    return sum(bilist.right_counts[left] * left for left in bilist.left_list)
+
+
+def sum_distances(bilist: Bilist) -> int:
     accumulator = 0
 
-    # solve part 2
-
-    return accumulator
-
-
-def answer1(bilist: Bilist) -> int:
-    accumulator = 0
-
-    for first, second in zip(sorted(bilist.first_list), sorted(bilist.second_list)):
-        print(f"comparing {first}, {second}: {abs(second - first)}")
-        accumulator += abs(second - first)
+    for left, right in zip(sorted(bilist.left_list), sorted(bilist.right_list)):
+        print(f"comparing {left}, {right}: {abs(right - left)}")
+        accumulator += abs(right - left)
 
     return accumulator
 
@@ -51,9 +50,9 @@ if __name__ == '__main__':
     lines = parse_input(argus.input_path)
     bilist = Bilist(lines)
     if argus.part == 1:
-        answer = answer1(bilist)
+        answer = sum_distances(bilist)
     else:
-        answer = answer2(bilist)
+        answer = sum_similarity(bilist)
 
     logger.debug('')
 
