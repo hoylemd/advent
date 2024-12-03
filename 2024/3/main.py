@@ -4,18 +4,25 @@ from typing import Iterator
 import re
 
 MULT_PATTERN = r'mul\((\d{1,3}),(\d{1,3})\)'
+DO_PATTERN = r'do\(\)'
+DONT_PATTERN = r'don\'t\(\)'
+
+KEYWORD_PATTERN = fr'({MULT_PATTERN}|{DO_PATTERN}|{DONT_PATTERN})'
 
 
-def parse_line(line: str):
-    return [(int(match[1]), int(match[2])) for match in re.finditer(MULT_PATTERN, line)]
+def parse_mult(match: re.Match) -> tuple[int, int]:
+    return (int(match[1]), int(match[2]))
 
 
 class Memory:
 
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
+        self.commands = []
+        patt = re.compile(MULT_PATTERN)
 
-        self.commands = parse_line(''.join(lines))
+        for match in patt.finditer(''.join(lines)):
+            self.commands.append(parse_mult(match))
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
