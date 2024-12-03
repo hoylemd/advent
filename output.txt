@@ -1,0 +1,17 @@
+Safe: #0: [6,8,9,xx,10]
+Safe: #1: [13,16,19,22,24,xx,25]
+Safe: #2: [43,46,47,48,50,52,xx]
+Safe: #3: [55,57,60,61,64,65,68,xx]
+Not Safe: #4: [81,84,86,83,84,87]
+   tried: #4: [81,84,xx,83,84,87]
+   tried: #4: [81,84,86,xx,84,87]
+slowsafe: #4: [xx,84,86,83,84,87]
+slowsafe: #4: [81,xx,86,83,84,87]
+slowsafe: #4: [81,84,xx,83,84,87]
+slowsafe: #4: [81,84,86,xx,84,87]
+slowsafe: #4: [81,84,86,83,xx,87]
+slowsafe: #4: [81,84,86,83,84,xx]
+> /Users/michaelhoyle/advent/2024/2/main.py(92)slowly_dampen_error()
+-> breakpoint()
+(Pdb) *** SystemExit: None
+(Pdb) 
