@@ -42,7 +42,7 @@ if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
     {{doc_name}} = parse_input(argus.input_path)
-    {{obj}} = {{class}}({{doc_name}})
+    {{obj}} = {{class}}({{doc_name}}, part=argus.part)
     if argus.part == 1:
         answer = {{p1_function}}({{obj}})
     else:
