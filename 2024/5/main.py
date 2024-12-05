@@ -26,25 +26,50 @@ class Rulebook:
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
 
-    def check_update(self, update: list[int]) -> bool:
+    def find_error(self, update: list[int]) -> tuple[int, int]:
+        """returns (index of ooo element, violated antecedent) or (-1, -1) if in correct order"""
         seen = set()
-        for page in update:
+        for i, page in enumerate(update):
             seen.add(page)
             if page not in self.rules:
                 continue
 
             for antecedent in self.rules[page]:
                 if antecedent in seen:
-                    print(f"page {page} printing after {antecedent}!")
-                    return False
+                    logger.debug(f"page {page} printing after {antecedent}!")
+                    return i, antecedent
 
-        return True
+        logger.debug(f"update {update} is good!")
+        return -1, -1
+
+    def check_update(self, update: list[int]) -> bool:
+        return True if self.find_error(update) == (-1, -1) else False
+
+    def enforce_update(self, update: list[int]) -> tuple[list[int], bool]:
+        """returns the fixed(?) update, and whether it was fixed or not"""
+        if (result := self.find_error(update)) == (-1, -1):
+            return update, False
+
+        ooo_index, ooo_antecedent = result
+        ooo_element = update[ooo_index]
+
+        removed = update[:ooo_index] + update[ooo_index + 1:]
+        oooa_index = removed.index(ooo_antecedent)
+        spliced = removed[:oooa_index] + [ooo_element] + removed[oooa_index:]
+
+        double_checked, _ = self.enforce_update(spliced)
+        logger.debug(f"{update=} enforced to {double_checked=}{'' if double_checked == spliced else f"from {spliced=}"}")
+
+        return double_checked, True
 
 
-def answer2(rulebook: Rulebook) -> int:
+def sum_middle_fixed_pages(rulebook: Rulebook, updated: Iterator[list[int]]) -> int:
     accumulator = 0
 
-    # solve part 2
+    for update in updates:
+        enforced, was_enforced = rulebook.enforce_update(update)
+        if was_enforced:
+            accumulator += enforced[len(enforced) // 2]
 
     return accumulator
 
@@ -54,7 +79,6 @@ def sum_middle_ordered_pages(rulebook: Rulebook, updates: Iterator[list[int]]) -
 
     for update in updates:
         if rulebook.check_update(update):
-            print(f"update {update} is good!")
             accumulator += update[len(update) // 2]
 
     return accumulator
@@ -77,11 +101,12 @@ if __name__ == '__main__':
     rule_lines, update_lines = separate_rules_and_updates([line for line in lines])
 
     rulebook = Rulebook(rule_lines, part=argus.part)
+    updates = (parse_update(line) for line in update_lines)
 
     if argus.part == 1:
-        answer = sum_middle_ordered_pages(rulebook, (parse_update(line) for line in update_lines))
+        answer = sum_middle_ordered_pages(rulebook, updates)
     else:
-        answer = answer2(rulebook)
+        answer = sum_middle_fixed_pages(rulebook, updates)
 
     logger.debug('')
 
