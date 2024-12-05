@@ -1,15 +1,8 @@
-This is a repo of my solutions to (Advent of Code)[http://adventofcode.com/]
+This is a repo of my solutions to [Advent of Code](http://adventofcode.com/)
 
 Dependencies:
-- Pyenv
-- Poetry
+- Python > 3.10
 - Mustache (`npm install -g mustache`)
-
-To Install for the year:
-
-- Make sure you have the pyenv version installed (current 3.12)
-- make sure you have poetry installed
-- do `poetry install`
 
 To start a day:
 
@@ -18,6 +11,9 @@ To start a day:
 ```
 
 You can also pass in a class and object name as 3rd and 4th positionals, but the defaults are fine too: (Thing/thing)
+
+TODO: tweak this to make it easier to prompt for the class/object names and solution method names etc
+TODO: add standardized logging
 
 run a test for a day:
 
@@ -28,5 +24,5 @@ run a test for a day:
 run the main solution for the day:
 
 ```
-./go.sh <year> <day>
+./go.sh <year> <day> <input file> [<part #>]
 ```
