@@ -33,18 +33,12 @@ class WordSearch:
             y = origin[0] + direction[0] * i
             x = origin[1] + direction[1] * i
 
-            # was_neg = False
             try:
                 if y < 0 or x < 0:  # treat negative index as out of bounds
-                    # was_neg = True
-
-                    #print('NEG')
                     raise IndexError
 
                 yield self.lines[y][x]
             except IndexError:
-                # if not was_neg:
-                # print('POS')
                 break  # out of bounds, done with this line
 
     def left_diagonal_lines(self):
@@ -90,36 +84,11 @@ class WordSearch:
                 # on an edge, can't be
                 return 0
 
-            # check cardinal
-            """
-            HEY GUESS WHAT A + ISNT AN X ISNT THAT A SURPRISE
-            h_adj = ''.join(sorted([self.lines[y][x - 1], self.lines[y][x + 1]]))
-            v_adj = ''.join(sorted([self.lines[y - 1][x], self.lines[y + 1][x]]))
-            if (h_adj == v_adj == 'MS'):
-                print('cardinal')
-                print('\n'.join([
-                    '.' + self.lines[y - 1][x] + '.',
-                    self.lines[y][x - 1:x + 2],
-                    '.' + self.lines[y + 1][x] + '.',
-                ]))
-                found += 1
-            """
-
-            # check diagonal
             l_adj = ''.join(sorted([self.lines[y - 1][x + 1], self.lines[y + 1][x - 1]]))
             r_adj = ''.join(sorted([self.lines[y - 1][x - 1], self.lines[y + 1][x + 1]]))
 
             if (l_adj == r_adj == 'MS'):
-                print('diagonal')
-                print('\n'.join([
-                    self.lines[y - 1][x - 1] + '.' + self.lines[y - 1][x + 1],
-                    '.' + self.lines[y][x] + '.',
-                    self.lines[y + 1][x - 1] + '.' + self.lines[y + 1][x + 1],
-                ]))
                 found += 1
-
-            if found > 0:
-                print()
 
         except IndexError:
             return 0  # if we go out of bounds, definitely no X-MAS there
@@ -145,23 +114,12 @@ class WordSearch:
 
 def count_x_mases(word_search: WordSearch) -> int:
     accumulator = 0
-    n_a = 0
 
     for y in range(1, word_search.dimension - 1):
         for x in range(1, word_search.dimension - 1):
             if word_search.lines[y][x] == 'A':
-                n_a += 1
-                count = word_search.x_mases_at((y, x))
-                if count > 0:
-                    print('\n'.join([
-                        word_search.lines[y - 1][x - 1:x + 2],
-                        word_search.lines[y][x - 1:x + 2],
-                        word_search.lines[y + 1][x - 1:x + 2],
-                    ]))
-                    print(f"{count=}, {accumulator=}, ({y=}, {x=})")
-                accumulator += count
+                accumulator += word_search.x_mases_at((y, x))
 
-    print(n_a)
     return accumulator
 
 
@@ -171,25 +129,8 @@ def count_in_line(line: str) -> int:
 
 def count_xmas_and_samx(word_search: WordSearch) -> int:
     accumulator = 0
-    """
-    print('horizontal')
-    print('\n'.join(word_search.horizontal_lines()))
-    print()
 
-    print('vertical')
-    print('\n'.join(word_search.vertical_lines()))
-    print()
-
-    print('left diagonals')
-    print('\n'.join(word_search.left_diagonal_lines()))
-    print()
-
-    print('right_diagonals')
-    print('\n'.join(word_search.right_diagonal_lines()))
-    """
-    # solve part 1
     accumulator += sum(count_in_line(line) for line in word_search.horizontal_lines())
-
     accumulator += sum(count_in_line(line) for line in word_search.vertical_lines())
     accumulator += sum(count_in_line(line) for line in word_search.left_diagonal_lines())
     accumulator += sum(count_in_line(line) for line in word_search.right_diagonal_lines())
