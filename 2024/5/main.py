@@ -3,19 +3,42 @@ from utils import logger, parse_input
 from typing import Iterator
 
 
-def parse_line(line: str):
-    return line.split()
+def parse_rule(line: str) -> tuple[int, int]:
+    precedent, antecedent = line.split('|')
+    return int(precedent), int(antecedent)
+
+
+def parse_update(line: str) -> list[int]:
+    return [int(u) for u in line.split(',')]
 
 
 class Rulebook:
 
-    def __init__(self, lines: Iterator[str], part: int = 1):
+    def __init__(self, lines: list[str], part: int = 1):
         self.part = part
+        self.rules = {}
 
-        self.elements = (parse_line(line) for line in lines)
+        for line in lines:
+            precedent, antecedent = parse_rule(line)
+            extant_deps = self.rules.get(precedent, [])
+            self.rules[precedent] = extant_deps + [antecedent]
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
+
+    def check_update(self, update: list[int]) -> bool:
+        seen = set()
+        for page in update:
+            seen.add(page)
+            if page not in self.rules:
+                continue
+
+            for antecedent in self.rules[page]:
+                if antecedent in seen:
+                    print(f"page {page} printing after {antecedent}!")
+                    return False
+
+        return True
 
 
 def answer2(rulebook: Rulebook) -> int:
@@ -26,10 +49,13 @@ def answer2(rulebook: Rulebook) -> int:
     return accumulator
 
 
-def sum_middle_ordered_pages(rulebook: Rulebook) -> int:
+def sum_middle_ordered_pages(rulebook: Rulebook, updates: Iterator[list[int]]) -> int:
     accumulator = 0
 
-    # solve part 1
+    for update in updates:
+        if rulebook.check_update(update):
+            print(f"update {update} is good!")
+            accumulator += update[len(update) // 2]
 
     return accumulator
 
@@ -52,11 +78,8 @@ if __name__ == '__main__':
 
     rulebook = Rulebook(rule_lines, part=argus.part)
 
-    print('\n'.join(rule_lines))
-    print()
-    print('\n'.join(update_lines))
     if argus.part == 1:
-        answer = sum_middle_ordered_pages(rulebook)
+        answer = sum_middle_ordered_pages(rulebook, (parse_update(line) for line in update_lines))
     else:
         answer = answer2(rulebook)
 
