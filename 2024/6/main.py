@@ -35,14 +35,14 @@ class LabMap:
             logger.debug(f"{tiles} steps, {direction} from {pos}, looking at ({y}, {x})")
 
             if self.is_out_of_bounds((y, x)):
-                logger.info(f"out of bounds at ({y}, {x})")
+                logger.debug(f"out of bounds at ({y}, {x})")
                 # OOB, we're leaving
                 return tiles
 
             content = self.lines[y][x]
 
             if content == '#':
-                logger.info(f"obstacle found at ({y}, {x})")
+                logger.debug(f"obstacle found at ({y}, {x})")
                 # Obstacle found!
                 return tiles
 
@@ -57,14 +57,6 @@ class LabMap:
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
-
-
-def answer2(lab_map: LabMap) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
 
 
 DIRECTIONS = [
@@ -86,10 +78,6 @@ def count_visited(lab_map: LabMap) -> int:
 
     # solve part 1
     while True:
-        if guard_position[0] < 0 or guard_position[1] < 0:
-            # bye bye bye
-            break
-
         direction = DIRECTIONS[turns % 4]
         logger.info(f"{guard_position=}, {turns=}, positions={len(seen)}")
         crossed = lab_map.find_obstacle(guard_position, direction)
@@ -108,6 +96,56 @@ def count_visited(lab_map: LabMap) -> int:
     return len(seen)
 
 
+def leads_to_loop(lab_map: LabMap, seen_obstacles: set[tuple[tuple[int, int], tuple[int, int]]],
+                  guard_position: tuple[int, int], direction_index: int) -> bool:
+    turns = 0
+    direction = DIRECTIONS[direction_index % 4]
+    p_crossed = lab_map.find_obstacle(guard_position, direction)
+    p_obstacle = radar_ping(guard_position, direction, p_crossed)
+
+    if (p_obstacle, direction) in seen_obstacles:
+        logger.info(f"possible obstacle found! {guard_position} leads to {p_obstacle}, facing {direction}")
+        return True
+    return False
+
+
+def count_loop_obstacles(lab_map: LabMap) -> int:
+    """Count places in the path where an obstruction would send the guard back to a previous obstruction, facing the same direction"""
+    guard_position = lab_map.guard_position
+    seen_obstacles = set()
+    potential_obstacles = set()
+    turns = 0
+
+    # solve part 2
+    while True:
+        direction = DIRECTIONS[turns % 4]
+        next_direction = DIRECTIONS[(turns + 1) % 4]
+        logger.info(f"{guard_position=}, {turns=}, obstacles={len(seen_obstacles)}")
+        crossed = lab_map.find_obstacle(guard_position, direction)
+        logger.info(f"{crossed=}")
+
+        for i in range(crossed):
+            next_position = radar_ping(guard_position, direction)
+
+            if leads_to_loop(lab_map, seen_obstacles, guard_position, turns + 1):
+                potential_obstacles.add(next_position)
+
+            guard_position = next_position
+
+        new_obstacle = (  # position, direction
+            radar_ping(guard_position, direction), direction)
+
+        seen_obstacles.add(new_obstacle)
+
+        if lab_map.is_on_edge(guard_position):
+            # shes a-leaving
+            break
+
+        turns += 1
+
+    return len(potential_obstacles)
+
+
 arg_parser = ArgumentParser('python -m 2024.6.main', description="Advent of Code 2024 Day 6")
 arg_parser.add_argument('input_path', help="Path to the input file")
 arg_parser.add_argument('part', type=int, default=1, help="Which part of the challenge to apply.")
@@ -120,7 +158,7 @@ if __name__ == '__main__':
     if argus.part == 1:
         answer = count_visited(lab_map)
     else:
-        answer = answer2(lab_map)
+        answer = count_loop_obstacles(lab_map)
 
     logger.debug('')
 
