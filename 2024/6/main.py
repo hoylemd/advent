@@ -31,7 +31,7 @@ class LabMap:
         tiles = 0
 
         while True:
-            y, x = pos[0] + direction[0] * (tiles + 1), pos[1] + direction[1] * (tiles + 1)
+            y, x = radar_ping(pos, direction, tiles)
             logger.debug(f"{tiles} steps, {direction} from {pos}, looking at ({y}, {x})")
 
             if self.is_out_of_bounds((y, x)):
@@ -75,6 +75,10 @@ DIRECTIONS = [
 ]
 
 
+def radar_ping(from_pos: tuple[int, int], direction: tuple[int, int], distance: int = 0) -> tuple[int, int]:
+    return (from_pos[0] + direction[0] * (distance + 1), from_pos[1] + direction[1] * (distance + 1))
+
+
 def count_visited(lab_map: LabMap) -> int:
     guard_position = lab_map.guard_position
     seen = set([guard_position])
@@ -92,7 +96,7 @@ def count_visited(lab_map: LabMap) -> int:
         logger.info(f"{crossed=}")
 
         for i in range(crossed):
-            guard_position = (guard_position[0] + direction[0], guard_position[1] + direction[1])
+            guard_position = radar_ping(guard_position, direction)
             seen.add(guard_position)
 
         if lab_map.is_on_edge(guard_position):
