@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Callable, Generator, Any
+from itertools import combinations_with_replacement
 
 from utils import logger, parse_input
 
@@ -14,18 +15,107 @@ def esrap_line(test_value: int, operands: list[int]) -> str:
     return f"{test_value}: {' '.join(str(o) for o in operands)}"
 
 
+type ops_list = tuple[str, ...]
+type ops_genny = Generator[ops_list, Any, Any]
+
+
+VALID_OPS = ['+', '*']
+
+
+class Equation:
+
+    def __init__(self, test_value: int, operands: list[int]):
+        self.test_value = test_value
+        self.operands = operands
+        self.num_ops = len(operands) - 1
+        self.num_tried = 0
+
+    def validate_operators(self, operators: ops_list):
+        if len(operators) != (self.num_ops):
+            raise ValueError(f"incorrect # of operators (exp: {self.num_ops}, got {len(operators)})")
+
+    def enumerate_ops(self, operators: ops_list) -> Iterator[tuple[int, tuple[str, int]]]:
+        for i, op in enumerate(operators):
+            yield i, (op, self.operands[i + 1])
+
+    def compute(self, operators: ops_list) -> int:
+        self.validate_operators(operators)
+
+        accumulator = self.operands[0]
+        for i, (op, operand) in self.enumerate_ops(operators):
+            match op:
+                case '+':
+                    accumulator += operand
+                case '*':
+                    accumulator *= operand
+                case _:
+                    raise ValueError(f"operator at position {i} is invalid: '{op}'")
+
+        return accumulator
+
+    def __str__(self) -> str:
+        return f"{self.test_value}: {self.operands} ({self.num_ops} ops, combos: {self.n_combos()})"
+
+    def print_with_ops(self, ops: ops_list) -> str:
+        parts = [f"{self.test_value}: {self.operands[0]}"
+                 ] + [f" {op} {operand}" for _, (op, operand) in self.enumerate_ops(ops)]
+
+        return ''.join(parts)
+
+    def esrap(self) -> tuple[int, list[int]]:
+        return (self.test_value, self.operands)
+
+    def n_combos(self) -> int:
+        return len(VALID_OPS)**self.num_ops
+
+    def calibrate(self, tryer: ops_genny) -> ops_list | None:
+        for try_ops in tryer:
+            self.num_tried += 1
+            logger.info(f"  Trying {self.print_with_ops(try_ops)}")
+            test_val = self.compute(try_ops)
+            logger.info(f"    result: {test_val} =? {self.test_value}")
+            if test_val == self.test_value:
+                return try_ops
+
+        return None
+
+    def op_combos(self) -> ops_genny:
+        for combo in combinations_with_replacement(VALID_OPS, self.num_ops):
+            yield combo
+
+
 class Calibrator:
 
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
 
-        self.equations = [parse_line(line) for line in lines]
+        self.equations = [Equation(*parse_line(line)) for line in lines]
+
+        self.most_combos = (0, 0)
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
 
     def esrap(self) -> str:
-        return '\n'.join(esrap_line(*e) for e in self.equations)
+        return '\n'.join(esrap_line(*e.esrap()) for e in self.equations)
+
+    def calibrate(self, strategy: Callable[[Equation], ops_genny]) -> Iterator[int]:
+        for i, eq in enumerate(self.equations):
+            if eq.n_combos() > self.most_combos[1]:
+                self.most_combos = i, eq.n_combos()
+            logger.info(f"equation {i}: {eq}")
+            correct_ops = eq.calibrate(strategy(eq))
+
+            if correct_ops is not None:
+                logger.info(f"valid with ops {correct_ops} after {eq.num_tried} tries")
+                yield eq.test_value
+            else:
+                yield 0
+
+
+def brute_force(eq: Equation) -> ops_genny:
+    """brute force to find a valid operator sequence"""
+    return eq.op_combos()
 
 
 def answer2(calibrator: Calibrator) -> int:
@@ -37,9 +127,11 @@ def answer2(calibrator: Calibrator) -> int:
 
 
 def sum_valid(calibrator: Calibrator) -> int:
-    accumulator = 0
-
-    # solve part 1
+    accumulator = sum(calibrator.calibrate(brute_force))
+    total_combos = sum(eq.n_combos() for eq in calibrator.equations)
+    most_combos_i, most_combos_n = calibrator.most_combos
+    logger.info(f"Most combos: {calibrator.equations[most_combos_i]}: {most_combos_n}")
+    logger.info(f"Total combos: {total_combos}")
 
     return accumulator
 
