@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from typing import Iterator, Callable, Generator, Any
-from itertools import combinations_with_replacement
+from itertools import product
 
 from utils import logger, parse_input
 
@@ -80,7 +80,7 @@ class Equation:
         return None
 
     def op_combos(self) -> ops_genny:
-        for combo in combinations_with_replacement(VALID_OPS, self.num_ops):
+        for combo in product(VALID_OPS, repeat=self.num_ops):
             yield combo
 
 
@@ -92,6 +92,8 @@ class Calibrator:
         self.equations = [Equation(*parse_line(line)) for line in lines]
 
         self.most_combos = (0, 0)
+
+        self.correct_eqs: list[tuple[Equation, ops_list]] = []
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
@@ -107,6 +109,7 @@ class Calibrator:
             correct_ops = eq.calibrate(strategy(eq))
 
             if correct_ops is not None:
+                self.correct_eqs.append((eq, correct_ops))
                 logger.info(f"valid with ops {correct_ops} after {eq.num_tried} tries")
                 yield eq.test_value
             else:
@@ -118,20 +121,20 @@ def brute_force(eq: Equation) -> ops_genny:
     return eq.op_combos()
 
 
-def answer2(calibrator: Calibrator) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
-
-
 def sum_valid(calibrator: Calibrator) -> int:
     accumulator = sum(calibrator.calibrate(brute_force))
     total_combos = sum(eq.n_combos() for eq in calibrator.equations)
     most_combos_i, most_combos_n = calibrator.most_combos
     logger.info(f"Most combos: {calibrator.equations[most_combos_i]}: {most_combos_n}")
     logger.info(f"Total combos: {total_combos}")
+
+    return accumulator
+
+
+def answer2(calibrator: Calibrator) -> int:
+    accumulator = 0
+
+    # solve part 2
 
     return accumulator
 
