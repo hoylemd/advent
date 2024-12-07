@@ -1,4 +1,9 @@
 test.txt 1 41
+test2.txt 1 4
 input.txt 1 4967
 test.txt 2 6
-input.txt 2 -
+test2.txt 2 0
+test3.txt 2 0
+test4.txt 2 1
+test5.txt 2 1
+input.txt 2 1789

@@ -26,7 +26,8 @@ class LabMap:
 
         return line
 
-    def find_obstacle(self, pos: tuple[int, int], direction: tuple[int, int]) -> int:
+    def find_obstacle(self, pos: tuple[int, int], direction: tuple[int, int],
+                      temp_obstacle: tuple[int, int] = (-1, -1)) -> int:
         """returns distance to obstacle (i.e. # of tiles between start and obstacle)"""
         tiles = 0
 
@@ -41,7 +42,7 @@ class LabMap:
 
             content = self.lines[y][x]
 
-            if content == '#':
+            if content == '#' or (y, x) == temp_obstacle:
                 logger.debug(f"obstacle found at ({y}, {x})")
                 # Obstacle found!
                 return tiles
@@ -53,7 +54,7 @@ class LabMap:
         return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
 
     def is_on_edge(self, pos: tuple[int, int]) -> bool:
-        return pos[0] == 0 or pos[1] == 0 or pos[0] == self.height - 1 or pos[1] == self.width - 1
+        return pos[0] == 0 or pos[1] == 0 or pos[0] == (self.height - 1) or pos[1] == (self.width - 1)
 
     def __str__(self):
         return f"{self.__class__.__name__}(part {self.part})"
@@ -97,39 +98,64 @@ def count_visited(lab_map: LabMap) -> int:
 
 
 def leads_to_loop(lab_map: LabMap, seen_obstacles: set[tuple[tuple[int, int], tuple[int, int]]],
-                  guard_position: tuple[int, int], direction_index: int) -> bool:
+                  first_position: tuple[int, int], direction_index: int, temp_obstacle: tuple[int, int]) -> bool:
     turns = 0
-    direction = DIRECTIONS[direction_index % 4]
-    p_crossed = lab_map.find_obstacle(guard_position, direction)
-    p_obstacle = radar_ping(guard_position, direction, p_crossed)
+    new_obstacles = set()
+    guard_position = first_position
 
-    if (p_obstacle, direction) in seen_obstacles:
-        logger.info(f"possible obstacle found! {guard_position} leads to {p_obstacle}, facing {direction}")
-        return True
+    first_direction = DIRECTIONS[(direction_index + turns) % 4]
+    logger.info(f"checking for loop from {first_position}, {first_direction}")
+
+    while True:
+        direction = DIRECTIONS[(direction_index + turns) % 4]
+        p_crossed = lab_map.find_obstacle(guard_position, direction, temp_obstacle=temp_obstacle)
+        next_position = radar_ping(guard_position, direction, p_crossed - 1)
+        p_obstacle = radar_ping(guard_position, direction, p_crossed)
+        if lab_map.is_out_of_bounds(p_obstacle):
+            logger.info(f"would (inner) exit after {turns} turns, so no loop here")
+            return False
+        new_obstacle = (p_obstacle, direction)
+
+        logger.debug(f"next obstruction at {new_obstacle}")
+        if new_obstacle in seen_obstacles or new_obstacle in new_obstacles:
+            logger.info(f"after {turns} more steps...")
+            logger.info(f"possible obstacle at found! {first_position} leads to {p_obstacle}, facing {direction}")
+            return True
+
+        new_obstacles.add(new_obstacle)
+        guard_position = next_position
+        turns += 1
+
+    logger.info(f"would (outer) exit after {turns} turns, so no loop here")
     return False
 
 
 def count_loop_obstacles(lab_map: LabMap) -> int:
     """Count places in the path where an obstruction would send the guard back to a previous obstruction, facing the same direction"""
     guard_position = lab_map.guard_position
-    seen_obstacles = set()
-    potential_obstacles = set()
+    seen = set([guard_position])
+    seen_obstacles: set[tuple[tuple[int, int], tuple[int, int]]] = set()
+    potential_obstacles = list()
     turns = 0
 
     # solve part 2
     while True:
         direction = DIRECTIONS[turns % 4]
-        next_direction = DIRECTIONS[(turns + 1) % 4]
-        logger.info(f"{guard_position=}, {turns=}, obstacles={len(seen_obstacles)}")
+        logger.info(f"{guard_position=}, {direction=}{turns=}, obstacles={len(seen_obstacles)}")
         crossed = lab_map.find_obstacle(guard_position, direction)
         logger.info(f"{crossed=}")
 
         for i in range(crossed):
             next_position = radar_ping(guard_position, direction)
 
-            if leads_to_loop(lab_map, seen_obstacles, guard_position, turns + 1):
-                potential_obstacles.add(next_position)
+            #if next_position == (77, 59):
+            #    breakpoint()
+            if next_position not in seen and leads_to_loop(lab_map, seen_obstacles | set([(next_position, direction)]),
+                                                           guard_position, turns + 1, next_position):
+                logger.info(f"adding obstacle at {next_position}")
+                potential_obstacles.append(next_position)
 
+            seen.add(guard_position)
             guard_position = next_position
 
         new_obstacle = (  # position, direction
@@ -137,12 +163,14 @@ def count_loop_obstacles(lab_map: LabMap) -> int:
 
         seen_obstacles.add(new_obstacle)
 
-        if lab_map.is_on_edge(guard_position):
+        if lab_map.is_out_of_bounds(radar_ping(guard_position, direction)):
             # shes a-leaving
             break
 
         turns += 1
 
+    # logger.info(f"{potential_obstacles=}")
+    # between 1665 and 1880 (?)
     return len(potential_obstacles)
 
 
