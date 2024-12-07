@@ -19,14 +19,31 @@ type ops_list = tuple[str, ...]
 type ops_genny = Generator[ops_list, Any, Any]
 
 
-VALID_OPS = ['+', '*']
+def op_plus(left: int, right: int) -> int:
+    return left + right
+
+
+def op_times(left: int, right: int) -> int:
+    return left * right
+
+
+def op_cat(left: int, right: int) -> int:
+    return int(f"{left}{right}")
+
+
+OPERATIONS = {
+    '+': op_plus,
+    '*': op_times,
+    '||': op_cat
+}
 
 
 class Equation:
 
-    def __init__(self, test_value: int, operands: list[int]):
+    def __init__(self, test_value: int, operands: list[int], valid_ops):
         self.test_value = test_value
         self.operands = operands
+        self.valid_ops = valid_ops
         self.num_ops = len(operands) - 1
         self.num_tried = 0
 
@@ -43,13 +60,7 @@ class Equation:
 
         accumulator = self.operands[0]
         for i, (op, operand) in self.enumerate_ops(operators):
-            match op:
-                case '+':
-                    accumulator += operand
-                case '*':
-                    accumulator *= operand
-                case _:
-                    raise ValueError(f"operator at position {i} is invalid: '{op}'")
+            accumulator = OPERATIONS[op](accumulator, operand)
 
         return accumulator
 
@@ -66,7 +77,7 @@ class Equation:
         return (self.test_value, self.operands)
 
     def n_combos(self) -> int:
-        return len(VALID_OPS)**self.num_ops
+        return len(self.valid_ops)**self.num_ops
 
     def calibrate(self, tryer: ops_genny) -> ops_list | None:
         for try_ops in tryer:
@@ -80,7 +91,7 @@ class Equation:
         return None
 
     def op_combos(self) -> ops_genny:
-        for combo in product(VALID_OPS, repeat=self.num_ops):
+        for combo in product(self.valid_ops, repeat=self.num_ops):
             yield combo
 
 
@@ -89,7 +100,11 @@ class Calibrator:
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
 
-        self.equations = [Equation(*parse_line(line)) for line in lines]
+        valid_ops = ['+', '*']
+        if self.part > 1:
+            valid_ops.append('||')
+
+        self.equations = [Equation(*parse_line(line), valid_ops) for line in lines]
 
         self.most_combos = (0, 0)
 
