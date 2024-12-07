@@ -103,16 +103,28 @@ while read spec; do
   path=$year/$day/${args[0]}
   part=${args[1]}
   answer=${args[2]}
+  echo_check=false
   if [[ "$answer" == '-' ]]; then
     if [ "$VERBOSE" = true ]; then
       echo "No answer supplied for $path part $part, skipping"
     fi
   else
+    if [[ "$answer" == 'echo' ]]; then  # used to check parsing
+      if [ "$VERBOSE" = true ]; then
+        echo "testing parsing"
+      fi
+      echo_check=true
+      answer=$(<$path)
+    fi
     if [ "$VERBOSE" = true ]; then
       echo "Testing $path part $part:"
     fi
-    result=$(LOG_LEVEL=$LOG_LEVEL python -m $year.$day.main $path $part | tail -n1)
-    if [[ $result == $answer ]]; then
+    if [[ $echo_check ]]; then # check the whole output
+      result=$(LOG_LEVEL="ERROR" python -m $year.$day.main $path $part)
+    else
+      result=$(LOG_LEVEL=$LOG_LEVEL python -m $year.$day.main $path $part | tail -n1)
+    fi
+    if [[ $result == "$answer" ]]; then
       printf "${GREEN}-${NC} $path part $part ${GREEN}PASSED${NC}\n"
     else
       printf "${RED}X${NC} $path part $part ${RED}FAILED${NC}\n"

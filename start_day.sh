@@ -58,6 +58,7 @@ touch "$year/$day/test2.txt"
 touch "$year/$day/input.txt"
 
 cat << EOF > "$year/$day/answers.txt"
+test.txt -1 echo
 test.txt 1 -
 input.txt 1 -
 test.txt 2 -
