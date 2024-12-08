@@ -119,7 +119,7 @@ while read spec; do
     if [ "$VERBOSE" = true ]; then
       echo "Testing $path part $part:"
     fi
-    if [[ $echo_check ]]; then # check the whole output
+    if $echo_check; then # check the whole output
       result=$(LOG_LEVEL="ERROR" python -m $year.$day.main $path $part)
     else
       result=$(LOG_LEVEL=$LOG_LEVEL python -m $year.$day.main $path $part | tail -n1)
