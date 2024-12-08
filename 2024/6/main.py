@@ -1,8 +1,10 @@
 from argparse import ArgumentParser
-from utils import logger, parse_input
 from typing import Iterator
 
+from utils import logger, parse_input, coordinates  #, CharGrid
 
+
+# TODO: refactor with CharGrid
 class LabMap:
 
     def __init__(self, lines: Iterator[str], part: int = 1):
@@ -26,8 +28,7 @@ class LabMap:
 
         return line
 
-    def find_obstacle(self, pos: tuple[int, int], direction: tuple[int, int],
-                      temp_obstacle: tuple[int, int] = (-1, -1)) -> int:
+    def find_obstacle(self, pos: coordinates, direction: coordinates, temp_obstacle: coordinates = (-1, -1)) -> int:
         """returns distance to obstacle (i.e. # of tiles between start and obstacle)"""
         tiles = 0
 
@@ -50,10 +51,10 @@ class LabMap:
             # Maybe X in the tile?
             tiles += 1
 
-    def is_out_of_bounds(self, pos: tuple[int, int]) -> bool:
+    def is_out_of_bounds(self, pos: coordinates) -> bool:
         return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
 
-    def is_on_edge(self, pos: tuple[int, int]) -> bool:
+    def is_on_edge(self, pos: coordinates) -> bool:
         return pos[0] == 0 or pos[1] == 0 or pos[0] == (self.height - 1) or pos[1] == (self.width - 1)
 
     def __str__(self):
@@ -68,7 +69,7 @@ DIRECTIONS = [
 ]
 
 
-def radar_ping(from_pos: tuple[int, int], direction: tuple[int, int], distance: int = 0) -> tuple[int, int]:
+def radar_ping(from_pos: coordinates, direction: coordinates, distance: int = 0) -> coordinates:
     return (from_pos[0] + direction[0] * (distance + 1), from_pos[1] + direction[1] * (distance + 1))
 
 
@@ -97,8 +98,8 @@ def count_visited(lab_map: LabMap) -> int:
     return len(seen)
 
 
-def leads_to_loop(lab_map: LabMap, seen_obstacles: set[tuple[tuple[int, int], tuple[int, int]]],
-                  first_position: tuple[int, int], direction_index: int, temp_obstacle: tuple[int, int]) -> bool:
+def leads_to_loop(lab_map: LabMap, seen_obstacles: set[tuple[coordinates, coordinates]], first_position: coordinates,
+                  direction_index: int, temp_obstacle: coordinates) -> bool:
     turns = 0
     new_obstacles = set()
     guard_position = first_position
@@ -131,10 +132,11 @@ def leads_to_loop(lab_map: LabMap, seen_obstacles: set[tuple[tuple[int, int], tu
 
 
 def count_loop_obstacles(lab_map: LabMap) -> int:
-    """Count places in the path where an obstruction would send the guard back to a previous obstruction, facing the same direction"""
+    """Count places in the path where an obstruction would send the guard back to a previous obstruction,
+    facing the same direction"""
     guard_position = lab_map.guard_position
     seen = set([guard_position])
-    seen_obstacles: set[tuple[tuple[int, int], tuple[int, int]]] = set()
+    seen_obstacles: set[tuple[coordinates, coordinates]] = set()
     potential_obstacles = list()
     turns = 0
 
@@ -148,7 +150,7 @@ def count_loop_obstacles(lab_map: LabMap) -> int:
         for i in range(crossed):
             next_position = radar_ping(guard_position, direction)
 
-            #if next_position == (77, 59):
+            # if next_position == (77, 59):
             #    breakpoint()
             if next_position not in seen and leads_to_loop(lab_map, seen_obstacles | set([(next_position, direction)]),
                                                            guard_position, turns + 1, next_position):
