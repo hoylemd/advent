@@ -1,19 +1,16 @@
 from argparse import ArgumentParser
 from typing import Iterator
 
-from utils import logger, parse_input, coordinates  #, CharGrid
+from utils import logger, parse_input, coordinates, CharGrid
 
 
 # TODO: refactor with CharGrid
-class LabMap:
+class LabMap(CharGrid):
 
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
         self.guard_position = (0, 0)  # placeholder
-        self.width = 0
-
-        self.lines = [self.parse_line(i, line) for i, line in enumerate(lines)]
-        self.height = len(self.lines)
+        super().__init__(lines)
 
     def parse_line(self, y: int, line: str) -> str:
         if self.width == 0:
@@ -51,15 +48,6 @@ class LabMap:
             # Maybe X in the tile?
             tiles += 1
 
-    def is_out_of_bounds(self, pos: coordinates) -> bool:
-        return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
-
-    def is_on_edge(self, pos: coordinates) -> bool:
-        return pos[0] == 0 or pos[1] == 0 or pos[0] == (self.height - 1) or pos[1] == (self.width - 1)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}(part {self.part})"
-
 
 DIRECTIONS = [
     (-1, 0),  # North
@@ -89,7 +77,7 @@ def count_visited(lab_map: LabMap) -> int:
             guard_position = radar_ping(guard_position, direction)
             seen.add(guard_position)
 
-        if lab_map.is_on_edge(guard_position):
+        if lab_map.is_out_of_bounds(radar_ping(guard_position, direction)):
             # shes a-leaving
             break
 
