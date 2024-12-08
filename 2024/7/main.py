@@ -118,7 +118,7 @@ class Calibrator:
 
     def calibrate(self, strategy: Callable[[Equation], ops_genny]) -> Iterator[int]:
         for i, eq in enumerate(self.equations):
-            logger.warn(f"processed {i+1} of {len(self.equations)}")
+            logger.warn(f"processed {i + 1} of {len(self.equations)}")
             if eq.n_combos() > self.most_combos[1]:
                 self.most_combos = i, eq.n_combos()
             logger.info(f"equation {i}: {eq}")
