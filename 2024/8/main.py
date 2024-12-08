@@ -4,7 +4,7 @@ import itertools
 from argparse import ArgumentParser
 from typing import Iterator, Mapping
 
-from utils import logger, parse_input
+from utils import logger, parse_input, INFINITY
 
 type coord = tuple[int, int]
 
@@ -55,15 +55,18 @@ class AntennaMap:
     def is_in_bounds(self, pos: coord) -> bool:
         return not self.is_out_of_bounds(pos)
 
-    def esrap_line(self, y: int) -> str:
+    def esrap_line(self, y: int, annotations: Mapping[coord, str] = {}) -> str:
         return ''.join(
-            self.reverse_map.get((y, x), '.') for x in range(self.width)
+            annotations.get((y, x), self.reverse_map.get((y, x), '.')) for x in range(self.width)
         )
 
     def esrap_lines(self) -> str:
         return '\n'.join(
             self.esrap_line(y) for y in range(self.height)
         )
+
+    def esrap_lines_with_annotations(self, annotations: Mapping[coord, str]) -> str:
+        return '\n'.join(self.esrap_line(y, annotations) for y in range(self.height))
 
     @functools.cached_property
     def reverse_map(self) -> Mapping[coord, str]:
@@ -74,25 +77,39 @@ class AntennaMap:
 
         return rev_map
 
-    def antinodes(self) -> Iterator[coord]:
+    def antinodes_for_pair(self, first: coord, second: coord) -> Iterator[coord]:
+        prev, curr = first, second
+        while True:
+            an = antinode(prev, curr)
+
+            yield curr
+            if self.is_out_of_bounds(an):
+                break
+
+            prev = curr
+            curr = an
+
+    def antinodes(self, skip=1, max=1) -> Iterator[coord]:
         for frequency, antennas in self.antennas.items():
             pairs = itertools.permutations(antennas, 2)
-            logger.info(f"Frequency {frequency} has antenna pairs at:")
+            logger.debug(f"Frequency {frequency} has antenna pairs at:")
 
             for pair in pairs:
-                an = antinode(*pair)
-                logger.info(f"  - {pair[0], pair[1]}: antinode at {an}")
-                if self.is_out_of_bounds(an):
-                    continue
-                yield an
+                for i, an in enumerate(self.antinodes_for_pair(*pair)):
+                    if i < skip:
+                        continue
+                    if i > max:
+                        break
+                    logger.debug(f"  - {pair[0], pair[1]}: antinode at {an}")
+                    yield an
 
 
-def answer2(antenna_map: AntennaMap) -> int:
-    accumulator = 0
+def count_resonant_antinodes(antenna_map: AntennaMap) -> int:
+    seen = set()
+    for coord in antenna_map.antinodes(0, INFINITY):
+        seen.add(coord)
 
-    # solve part 2
-
-    return accumulator
+    return len(seen)
 
 
 def count_antinodes(antenna_map: AntennaMap) -> int:
@@ -118,7 +135,7 @@ if __name__ == '__main__':
         case 1:
             answer = count_antinodes(antenna_map)
         case 2:
-            answer = answer2(antenna_map)
+            answer = count_resonant_antinodes(antenna_map)
 
     logger.debug('')
 
