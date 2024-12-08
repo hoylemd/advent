@@ -58,7 +58,7 @@ fi
 
 dir=$year/$day
 
-if [ ! -d $dir ]; then
+if [ ! -d "$dir" ]; then
   echo "Please supply a valid year and day ($year day $day not found)"
   usage
   exit 1
@@ -68,7 +68,7 @@ touch_answers() {
   year=$1
   shift
   day=$1
-  cat << EOF > $year/$day/answers.txt
+  cat << EOF > "$year/$day/answers.txt"
 test.txt 1 -
 input.txt 1 -
 test.txt 2 -
@@ -76,9 +76,9 @@ input.txt 2 -
 EOF
 }
 
-if [ ! -f $dir/answers.txt ]; then
+if [ ! -f "$dir/answers.txt" ]; then
   echo "Answers file could not be found for $year day $day. Please populate $year/$day/answers.txt"
-  touch_answers $year $day
+  touch_answers "$year" "$day"
   exit 2
 fi
 
@@ -95,11 +95,11 @@ if [ "$VERBOSE" = true ]; then
     debug_msg='(logs: debug)'
   fi
 
-  printf "${RED}Verbose mode activated.${NC}$debug_msg\n"
+  printf "${RED}Verbose mode activated.${NC}%s\n" "$debug_msg"
 fi
 
-while read spec; do
-  args=($spec)
+while read -r spec; do
+  args=("$spec")
   path=$year/$day/${args[0]}
   part=${args[1]}
   answer=${args[2]}
@@ -114,20 +114,21 @@ while read spec; do
         echo "testing parsing"
       fi
       echo_check=true
-      answer=$(<$path)
+      answer=$(<"$path")
     fi
     if [ "$VERBOSE" = true ]; then
       echo "Testing $path part $part:"
     fi
+    module="$year.$day.main"
     if $echo_check; then # check the whole output
-      result=$(LOG_LEVEL="ERROR" python -m $year.$day.main $path $part)
+      result=$(LOG_LEVEL="ERROR" python -m "$module" "$path" "$part")
     else
-      result=$(LOG_LEVEL=$LOG_LEVEL python -m $year.$day.main $path $part | tail -n1)
+      result=$(LOG_LEVEL=$LOG_LEVEL python -m "$module" "$path" "$part" | tail -n1)
     fi
     if [[ $result == "$answer" ]]; then
-      printf "${GREEN}-${NC} $path part $part ${GREEN}PASSED${NC}\n"
+      printf "${GREEN}-${NC} %s part %s ${GREEN}PASSED${NC}\n" "$path" "$part"
     else
-      printf "${RED}X${NC} $path part $part ${RED}FAILED${NC}\n"
+      printf "${RED}X${NC} %s part %s ${RED}FAILED${NC}\n" "$path" "$part"
       if [ "$VERBOSE" = true ]; then
         echo "  exp: $answer"
         echo "  act: $result"
@@ -135,11 +136,13 @@ while read spec; do
       passing=false
     fi
   fi
-done < $dir/answers.txt
+done < "$dir/answers.txt"
 
 if [[ "$passing" == true ]]; then
+  # shellcheck disable=SC2059
   printf "Tests ${GREEN}passed!${NC}\n"
 else
+  # shellcheck disable=SC2059
   printf "Tests ${RED}FAILED!${NC} Check above output\n"
   exit 3
 fi
