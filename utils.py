@@ -1,7 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
-from typing import Iterator, Generator, Callable, Optional, Any
+from typing import Iterator, Generator, Callable, Optional, Any, Mapping
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -593,6 +593,62 @@ class Grid:
 
 
 # endregion
+
+# region === New, Simpler grid classes (2024) ===
+
+type coordinates = tuple[int, int]  # always (y, x), NOT (x, y)
+
+
+class CharGrid:
+    """A class for representing a grid of cells, each represented by a single char
+        Assumes it's a rectangular grid, but it need not be square
+    """
+
+    def __init__(self, lines: Iterator[str]):
+        self.height = 0
+        self.width = 0
+
+        self.lines = list(self.parse_lines(lines))
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
+
+    def parse_line(self, y: int, line: str) -> str:
+        """Parse a single line. Just emits it back by default, but override this
+        to parse out puzzle elements
+        """
+        return line
+
+    def parse_lines(self, lines: Iterator[str]) -> Iterator[str]:
+        """Feed in the lines from input, parse each one, and emit the lines
+
+        Add any additional parsing logic here (i.e. parsing out positions of things)
+        """
+        measure_dims = self.width == 0 and self.height == 0
+
+        for y, line in enumerate(lines):
+            if measure_dims:
+                if not self.width:
+                    self.width = len(line)
+                self.height += 1
+
+            yield self.parse_line(y, line)
+
+    def esrap_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
+        line = self.lines[y]
+        return ''.join(
+            annotations.get((y, x), line[x]) for x in range(self.width)
+        )
+
+    def esrap_lines(self, annotations: Mapping[coordinates, str] = {}) -> str:
+        return '\n'.join(self.esrap_line(y, annotations) for y in range(self.height))
+
+    def is_out_of_bounds(self, pos: coordinates) -> bool:
+        return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
+
+    def is_in_bounds(self, pos: coordinates) -> bool:
+        return not self.is_out_of_bounds(pos)
+
 
 INFINITY = 999_999_999_999_999
 
