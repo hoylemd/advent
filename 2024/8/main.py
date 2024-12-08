@@ -1,8 +1,10 @@
+import collections
+import functools
+import itertools
 from argparse import ArgumentParser
-from utils import logger, parse_input
 from typing import Iterator, Mapping
-from collections import defaultdict
-from functools import cached_property
+
+from utils import logger, parse_input
 
 type coord = tuple[int, int]
 
@@ -12,6 +14,15 @@ def parse_line(line: str) -> Iterator[tuple[int, str]]:
         if c == '.':
             continue
         yield (x, c)
+
+
+def antinode(first: coord, second: coord) -> coord:
+    """Calculate the coordinates of the antinode for the two antennas that is
+    twice the distance from the first
+    """
+    displacement = (second[0] - first[0], second[1] - first[1])
+
+    return (second[0] + displacement[0], second[1] + displacement[1])
 
 
 class AntennaMap:
@@ -27,7 +38,7 @@ class AntennaMap:
         return f"{self.__class__.__name__}(part {self.part})"
 
     def parse_lines(self, lines: Iterator[str]) -> Mapping[str, list[coord]]:
-        antennas = defaultdict(list)
+        antennas = collections.defaultdict(list)
         for y, line in enumerate(lines):
             if not self.width:
                 self.width = len(line)
@@ -38,14 +49,11 @@ class AntennaMap:
 
         return antennas
 
-    @cached_property
-    def reverse_map(self) -> Mapping[coord, str]:
-        rev_map = {}
-        for c, coords in self.antennas.items():
-            for coord in coords:
-                rev_map[coord] = c
+    def is_out_of_bounds(self, pos: coord) -> bool:
+        return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
 
-        return rev_map
+    def is_in_bounds(self, pos: coord) -> bool:
+        return not self.is_out_of_bounds(pos)
 
     def esrap_line(self, y: int) -> str:
         return ''.join(
@@ -57,6 +65,27 @@ class AntennaMap:
             self.esrap_line(y) for y in range(self.height)
         )
 
+    @functools.cached_property
+    def reverse_map(self) -> Mapping[coord, str]:
+        rev_map = {}
+        for c, coords in self.antennas.items():
+            for coord in coords:
+                rev_map[coord] = c
+
+        return rev_map
+
+    def antinodes(self) -> Iterator[coord]:
+        for frequency, antennas in self.antennas.items():
+            pairs = itertools.permutations(antennas, 2)
+            logger.info(f"Frequency {frequency} has antenna pairs at:")
+
+            for pair in pairs:
+                an = antinode(*pair)
+                logger.info(f"  - {pair[0], pair[1]}: antinode at {an}")
+                if self.is_out_of_bounds(an):
+                    continue
+                yield an
+
 
 def answer2(antenna_map: AntennaMap) -> int:
     accumulator = 0
@@ -66,12 +95,12 @@ def answer2(antenna_map: AntennaMap) -> int:
     return accumulator
 
 
-def answer1(antenna_map: AntennaMap) -> int:
-    accumulator = 0
+def count_antinodes(antenna_map: AntennaMap) -> int:
+    seen = set()
+    for coord in antenna_map.antinodes():
+        seen.add(coord)
 
-    # solve part 1
-
-    return accumulator
+    return len(seen)
 
 
 arg_parser = ArgumentParser('python -m 2024.8.main', description="Advent of Code 2024 Day 8")
@@ -87,7 +116,7 @@ if __name__ == '__main__':
         case -1:
             answer = antenna_map.esrap_lines()
         case 1:
-            answer = answer1(antenna_map)
+            answer = count_antinodes(antenna_map)
         case 2:
             answer = answer2(antenna_map)
 
