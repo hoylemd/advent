@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from typing import Iterator
 import itertools
 
-from utils import logger, parse_input
+from utils import logger, parse_input, i_to_b64_chr
 
 type block = tuple[int, int, int | None] # offset, length, content
 
@@ -48,6 +48,12 @@ class DiskMap:
             f"{length}" for _, length, _ in self.blocks
         )
 
+    def print_blocks(self) -> str:
+        return ''.join(
+            f"{(i_to_b64_chr(content) if content is not None else '.') * length}"
+            for _, length, content in self.blocks
+        )
+
 
     """
     def print_disk_state(self, from_index: int = 0, to_index: int | None = None, delimiter: str = '') -> str:
@@ -68,6 +74,8 @@ def frag_and_checksum(disk_map: DiskMap) -> int:
     accumulator = 0
 
     # solve part 1
+
+    logger.info(disk_map.print_blocks())
 
     return accumulator
 
