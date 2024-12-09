@@ -754,5 +754,34 @@ def find_cycle(seq: list[int]):
 
     return idx - r, length
 
+def i_to_b64_chr(n: int) -> str:
+    if n < 0 or n > 63:
+        raise IndexError(f"Integer {n} can't be encoded to single-b64 char")
+
+    if n < 10: # 0-9, just int repr
+        return f"{n}"
+    elif n < 36: # 10-34: A-Z
+        return f"{chr((n - 10) + ord('A'))}"
+    elif n < 62:
+        return f"{chr((n - 36) + ord('a'))}"
+    elif n == 62:
+        return '+'
+    else: # n == 63
+        return '='
+
+
+B64_REPS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+='
+def b64_chr_to_i(s: str) -> int:
+    if len(s) != 1:
+        raise ValueError(f"String '{s}' is not a single B64 char")
+
+    i = B64_REPS.index(s[0])
+
+    if i <0:
+        raise ValueError(f"String '{s} is not a B64 char (0-9,A-Z,a-z,+,=)")
+
+    return i
+
+
 
 # endregion
