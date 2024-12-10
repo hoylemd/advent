@@ -11,8 +11,12 @@ class TrailMap(CharGrid):
         self.heads: list[coordinates] = []
         self.tails: list[coordinates] = []
 
-        self.reached_tails = set()
+        # self.reached_tails = set()
         super().__init__(lines)
+
+        # if it's a set of coodinates, # of tails reachable
+        # if None, unvisited (or a tail)
+        self.subroutes: list[list[set[coordinates] | None]] = [[None] * self.width for y in range(self.height)]
 
     def parse_cell(self, y: int, x: int, c: str) -> int | None:
         i = None if c == '.' else int(c)
@@ -45,17 +49,47 @@ class TrailMap(CharGrid):
             if self.is_in_bounds(target) and test(self.lines[target[0]][target[1]]):
                 yield target
 
-    def score_trail(self, trailhead: coordinates) -> int:
-        elevation = self.get_cell(*trailhead)
+    def print_subscore_at(self, y: int, x: int, annotations: Mapping[coordinates, str] = {}) -> str:
+        subroute = self.subroutes[y][x]
+
+        if annotation := annotations.get((y, x)):
+            return annotation
+
+        if subroute is None:
+            return '.'
+
+        return f"{len(subroute)}"
+
+    def print_score_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
+        return ''.join(self.print_subscore_at(y, x, annotations=annotations) for x in range(self.width))
+
+    def print_scores(self, annotations: Mapping[coordinates, str] = {}) -> str:
+        return '\n'.join(self.print_score_line(y, annotations=annotations) for y in range(self.height))
+
+    def score_trail(self, trailhead: coordinates) -> set[coordinates]:
+        y, x = trailhead
+
+        elevation = self.lines[y][x]
 
         if elevation == 9:
-            self.reached_tails.add(coordinates)
-            return 1
+            logger.debug(f"Found peak at {trailhead}")
+            return set([(y, x)])
 
-        # depth-first-search?
-        next_nodes = list(self.cardinal_adjacent_cells(*trailhead, test=lambda v: v is not None and v - elevation == 1))
+        if (subroute := self.subroutes[y][x]) is not None:
+            return subroute
 
-        return sum(self.score_trail(next_node) for next_node in next_nodes)
+        # depth-first-search? or is this djikstra?
+        next_nodes = list(self.cardinal_adjacent_cells(y, x, test=lambda v: v is not None and v - elevation == 1))
+
+        subroutes = set()
+        for next_node in next_nodes:
+            next_subs = self.score_trail(next_node)
+            logger.debug(self.print_scores({trailhead: f"{elevation}"}))
+            subroutes.update(next_subs)
+
+        self.subroutes[y][x] = subroutes
+
+        return subroutes
 
 
 def answer2(trail_map: TrailMap) -> int:
@@ -66,13 +100,14 @@ def answer2(trail_map: TrailMap) -> int:
     return accumulator
 
 
-def answer1(trail_map: TrailMap) -> int:
+def score_all_trailheads(trail_map: TrailMap) -> int:
+    accumulator = 0
     for head in trail_map.heads:
-        trail_map.score_trail(head)
+        score = len(trail_map.score_trail(head))
+        logger.info(f"head at {head} has score {score}")
+        accumulator += score
 
-    # solve part 1
-
-    return len(trail_map.reached_tails)
+    return accumulator
 
 
 arg_parser = ArgumentParser('python -m 2024.10.main', description="Advent of Code 2024 Day 10")
@@ -88,7 +123,7 @@ if __name__ == '__main__':
         case -1:
             answer = trail_map.esrap_lines()
         case 1:
-            answer = answer1(trail_map)
+            answer = score_all_trailheads(trail_map)
         case 2:
             answer = answer2(trail_map)
 
