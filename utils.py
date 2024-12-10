@@ -755,4 +755,25 @@ def find_cycle(seq: list[int]):
     return idx - r, length
 
 
+B64_REPS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+='
+def i_to_b64_chr(n: int) -> str:
+    if n < 0 or n > 63:
+        raise IndexError(f"Integer {n} can't be encoded to single-b64 char")
+
+    return B64_REPS[n]
+
+
+def b64_chr_to_i(s: str) -> int:
+    if len(s) != 1:
+        raise ValueError(f"String '{s}' is not a single B64 char")
+
+    i = B64_REPS.index(s[0])
+
+    if i <0:
+        raise ValueError(f"String '{s} is not a B64 char (0-9,A-Z,a-z,+,=)")
+
+    return i
+
+
+
 # endregion
