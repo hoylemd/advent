@@ -16,7 +16,7 @@ class TrailMap(CharGrid):
 
         # if it's a set of coodinates, # of tails reachable
         # if None, unvisited (or a tail)
-        self.subroutes: list[list[set[coordinates] | None]] = [[None] * self.width for y in range(self.height)]
+        self.subroutes: list[list[set[tuple[coordinates]] | None]] = [[None] * self.width for y in range(self.height)]
 
     def parse_cell(self, y: int, x: int, c: str) -> int | None:
         i = None if c == '.' else int(c)
@@ -66,14 +66,14 @@ class TrailMap(CharGrid):
     def print_scores(self, annotations: Mapping[coordinates, str] = {}) -> str:
         return '\n'.join(self.print_score_line(y, annotations=annotations) for y in range(self.height))
 
-    def score_trail(self, trailhead: coordinates) -> set[coordinates]:
+    def score_trail(self, trailhead: coordinates) -> set[tuple[coordinates]]:
         y, x = trailhead
 
         elevation = self.lines[y][x]
 
         if elevation == 9:
             logger.debug(f"Found peak at {trailhead}")
-            return set([(y, x)])
+            return set(((y, x),))
 
         if (subroute := self.subroutes[y][x]) is not None:
             return subroute
@@ -83,27 +83,34 @@ class TrailMap(CharGrid):
 
         subroutes = set()
         for next_node in next_nodes:
-            next_subs = self.score_trail(next_node)
-            logger.debug(self.print_scores({trailhead: f"{elevation}"}))
-            subroutes.update(next_subs)
+            for next_sub in self.score_trail(next_node):
+                subroutes.add((y, x) + next_sub)
+                # logger.debug(self.print_scores({trailhead: f"{elevation}"}))
+                #subroutes.update(next_subs)
 
         self.subroutes[y][x] = subroutes
 
         return subroutes
 
 
-def answer2(trail_map: TrailMap) -> int:
+def score_all_trailheads(trail_map: TrailMap) -> int:
     accumulator = 0
+    for head in trail_map.heads:
+        scores = trail_map.score_trail(head)
+        # TODO: for some reason the actual trail head is missing from the end of the paths now?
+        score = len(set([score[-2:] for score in scores]))
 
-    # solve part 2
+        logger.info(f"head at {head} has score {score}")
+        accumulator += score
 
     return accumulator
 
 
-def score_all_trailheads(trail_map: TrailMap) -> int:
+def score_all_trailheads_by_quality(trail_map: TrailMap) -> int:
     accumulator = 0
     for head in trail_map.heads:
-        score = len(trail_map.score_trail(head))
+        subscores = trail_map.score_trail(head)
+        score = len(subscores)
         logger.info(f"head at {head} has score {score}")
         accumulator += score
 
@@ -125,7 +132,7 @@ if __name__ == '__main__':
         case 1:
             answer = score_all_trailheads(trail_map)
         case 2:
-            answer = answer2(trail_map)
+            answer = score_all_trailheads_by_quality(trail_map)
 
     logger.debug('')
 
