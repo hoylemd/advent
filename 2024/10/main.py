@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
-from typing import Iterator, Mapping
+from typing import Iterator, Mapping, Callable, Any
 
-from utils import logger, parse_input, CharGrid, coordinates
+from utils import logger, parse_input, CharGrid, coordinates, CARDINAL_DIRECTIONS
 
 
 class TrailMap(CharGrid):
@@ -10,6 +10,8 @@ class TrailMap(CharGrid):
         self.part = part
         self.heads: list[coordinates] = []
         self.tails: list[coordinates] = []
+
+        self.reached_tails = set()
         super().__init__(lines)
 
     def parse_cell(self, y: int, x: int, c: str) -> int | None:
@@ -25,11 +27,35 @@ class TrailMap(CharGrid):
     def parse_line(self, y: int, line: str) -> list[int | None]:
         return [self.parse_cell(y, x, c) for x, c in enumerate(line)]
 
+    def get_cell(self, y: int, x: int) -> int:
+        return self.lines[y][x]
+
     def esrap_cell(self, y: int, x: int) -> str:
         return f"{self.lines[y][x]}"
 
     def esrap_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
         return ''.join(annotations.get((y, x), self.esrap_cell(y, x)) for x in range(self.width))
+
+    def cardinal_adjacent_cells(self,
+                                y: int,
+                                x: int,
+                                test: Callable[[Any], bool] = lambda v: v) -> Iterator[coordinates]:
+        for dy, dx in CARDINAL_DIRECTIONS:
+            target = (y + dy, x + dx)
+            if self.is_in_bounds(target) and test(self.lines[target[0]][target[1]]):
+                yield target
+
+    def score_trail(self, trailhead: coordinates) -> int:
+        elevation = self.get_cell(*trailhead)
+
+        if elevation == 9:
+            self.reached_tails.add(coordinates)
+            return 1
+
+        # depth-first-search?
+        next_nodes = list(self.cardinal_adjacent_cells(*trailhead, test=lambda v: v is not None and v - elevation == 1))
+
+        return sum(self.score_trail(next_node) for next_node in next_nodes)
 
 
 def answer2(trail_map: TrailMap) -> int:
@@ -41,11 +67,12 @@ def answer2(trail_map: TrailMap) -> int:
 
 
 def answer1(trail_map: TrailMap) -> int:
-    accumulator = 0
+    for head in trail_map.heads:
+        trail_map.score_trail(head)
 
     # solve part 1
 
-    return accumulator
+    return len(trail_map.reached_tails)
 
 
 arg_parser = ArgumentParser('python -m 2024.10.main', description="Advent of Code 2024 Day 10")
