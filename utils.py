@@ -650,6 +650,14 @@ class CharGrid:
         return not self.is_out_of_bounds(pos)
 
 
+CARDINAL_DIRECTIONS = [
+    (-1, 0),
+    (0, 1),
+    (1, 0),
+    (0, -1)
+]
+
+
 INFINITY = 999_999_999_999_999
 
 # region === Lists & bitmask ===
