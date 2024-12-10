@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Mapping
+
+from collections import defaultdict
 
 from utils import logger, parse_input, i_to_b64_chr
 
@@ -18,8 +20,11 @@ class DiskMap:
 
     def __init__(self, raw_map: str, part: int = 1):
         self.part = part
-        self.files: int = 0
+        self.files: list[tuple[int, int]] = []
+        self.gaps: list[tuple[int, int]] = []
         self.disk: list[int | None] = []
+
+        self.gaps_by_size = defaultdict(list)
 
         self.raw_map = self.parse(raw_map)
 
@@ -30,12 +35,13 @@ class DiskMap:
         pointer = 0
         for i, (file, free) in enumerate(parse_blocks(raw_map)):
 
+            self.files.append((len(self.disk), file))
             self.disk += [i] * file
 
             if free is not None:
+                self.gaps.append((len(self.disk), free))
+                self.gaps_by_size[free] = self.gaps_by_size[free] + [len(self.gaps) - 1]
                 self.disk += [None] * free
-
-        self.files = i
 
         return raw_map
 
@@ -44,7 +50,7 @@ class DiskMap:
         return ''
 
     def print_blocks(self) -> str:
-        return ''.join(f"{'.' if b is None else i_to_b64_chr(b)}" for b in self.disk)
+        return ''.join(f"{'.' if b is None else i_to_b64_chr(b % 64)}" for b in self.disk)
 
     def compact(self):
         left = 0
@@ -52,7 +58,7 @@ class DiskMap:
 
         logger.debug(self.print_blocks())
         while left < right:
-            logger.info(f"{left=}, {right=}, {len(self.disk)}")
+            #logger.info(f"{left=}, {right=}, {len(self.disk)}")
             if self.disk[left] is not None:
                 left += 1
                 continue
@@ -64,28 +70,54 @@ class DiskMap:
             self.disk[left] = self.disk[right]
             self.disk[right] = None
 
-            logger.debug(self.print_blocks())
+            #logger.debug(self.print_blocks())
+
+    def find_gap(self, size: int, max_offset: int) -> int | None:
+        for i, (gap_offset, gap_size) in enumerate(self.gaps):
+            if gap_offset >= max_offset:
+                break
+            if gap_size < size:
+                continue
+            return i
+
+        return None
+
+    def move_file_into_gap(self, file_id: int, gap_index: int):
+        file_offset, file_size = self.files[file_id]
+        gap_offset, gap_size = self.gaps[gap_index]
+
+
+        if file_size > gap_size:
+            raise ValueError(f"Gap {gap_index}({gap_size}) is too small for file {file_id} ({file_size})")
+
+        # logger.debug(f"Moving file {file_id}:{i_to_b64_chr(file_id % 64) * file_size} from {file_offset} to {gap_offset}")
+        # move blocks on disk
+        for i in range(file_size):
+            self.disk[gap_offset + i] = file_id
+            self.disk[file_offset + i] = None
+
+        # update file index
+        self.files[file_id] = (gap_offset, file_size)
+
+        # update gap index
+        self.gaps[gap_index] = (gap_offset + file_size, gap_size - file_size)
+
+    def compact_with_defrag(self):
+        for i in range(len(self.files) -1, -1, -1):
+            file_offset, file_size = self.files[i]
+            # logger.info(f"file {i}: at {file_offset}, {file_size} blocks")
+
+            leftmost_gap = self.find_gap(file_size, file_offset)
+
+            if leftmost_gap is None:
+                continue
+
+            self.move_file_into_gap(i, leftmost_gap)
+            # logger.debug(self.print_blocks())
+
 
     def checksum(self) -> int:
         return sum(i * file for i, file in enumerate(self.disk) if file is not None)
-
-
-def answer2(disk_map: DiskMap) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
-
-
-def compact_and_checksum(disk_map: DiskMap) -> int:
-    accumulator = 0
-
-    # solve part 1
-    disk_map.compact()
-    logger.debug(disk_map.print_blocks())
-
-    return disk_map.checksum()
 
 
 arg_parser = ArgumentParser('python -m 2024.9.main', description="Advent of Code 2024 Day 9")
@@ -97,17 +129,15 @@ if __name__ == '__main__':
 
     raw_map = list(parse_input(argus.input_path))[0]
     disk_map = DiskMap(raw_map, part=argus.part)
+    # logger.debug(disk_map.print_blocks())
     match argus.part:
         case -1:
             answer = disk_map.esrap()
         case 1:
-            answer = compact_and_checksum(disk_map)
+            disk_map.compact()
         case 2:
-            answer = answer2(disk_map)
+            disk_map.compact_with_defrag()
 
     logger.debug('')
 
-    if answer:
-        print(f"{answer}")
-    else:
-        print(f"No answer available for part {argus.part}")
+    print(disk_map.checksum())
