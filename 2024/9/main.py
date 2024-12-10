@@ -1,10 +1,7 @@
 from argparse import ArgumentParser
 from typing import Iterator
-import itertools
 
 from utils import logger, parse_input, i_to_b64_chr
-
-type block = tuple[int, int, int | None] # offset, length, content
 
 
 def parse_blocks(raw_map: str) -> Iterator[tuple[int, int | None]]:  # file blocks, free blocks
@@ -21,8 +18,8 @@ class DiskMap:
 
     def __init__(self, raw_map: str, part: int = 1):
         self.part = part
-        self.blocks: list[block] = []
         self.files: int = 0
+        self.disk: list[int | None] = []
 
         self.raw_map = self.parse(raw_map)
 
@@ -33,33 +30,44 @@ class DiskMap:
         pointer = 0
         for i, (file, free) in enumerate(parse_blocks(raw_map)):
 
-            self.blocks.append((pointer, file, i))
-            pointer += file
+            self.disk += [i] * file
 
             if free is not None:
-                self.blocks.append((pointer, free, None))
+                self.disk += [None] * free
 
         self.files = i
 
         return raw_map
 
     def esrap(self) -> str:
-        return ''.join(
-            f"{length}" for _, length, _ in self.blocks
-        )
+        # TODO: reimplement
+        return ''
 
     def print_blocks(self) -> str:
-        return ''.join(
-            f"{(i_to_b64_chr(content) if content is not None else '.') * length}"
-            for _, length, content in self.blocks
-        )
+        return ''.join(f"{'.' if b is None else i_to_b64_chr(b)}" for b in self.disk)
 
+    def compact(self):
+        left = 0
+        right = len(self.disk) - 1
 
-    """
-    def print_disk_state(self, from_index: int = 0, to_index: int | None = None, delimiter: str = '') -> str:
-        return delimiter.join(
-            f"{str(i % 10) * file}{'.' * free or 0}" for i, (file, free) in enumerate(zip(self.files, self.free)))
-    """
+        logger.debug(self.print_blocks())
+        while left < right:
+            logger.info(f"{left=}, {right=}, {len(self.disk)}")
+            if self.disk[left] is not None:
+                left += 1
+                continue
+
+            if self.disk[right] is None:
+                right -= 1
+                continue
+
+            self.disk[left] = self.disk[right]
+            self.disk[right] = None
+
+            logger.debug(self.print_blocks())
+
+    def checksum(self) -> int:
+        return sum(i * file for i, file in enumerate(self.disk) if file is not None)
 
 
 def answer2(disk_map: DiskMap) -> int:
@@ -70,14 +78,14 @@ def answer2(disk_map: DiskMap) -> int:
     return accumulator
 
 
-def frag_and_checksum(disk_map: DiskMap) -> int:
+def compact_and_checksum(disk_map: DiskMap) -> int:
     accumulator = 0
 
     # solve part 1
+    disk_map.compact()
+    logger.debug(disk_map.print_blocks())
 
-    logger.info(disk_map.print_blocks())
-
-    return accumulator
+    return disk_map.checksum()
 
 
 arg_parser = ArgumentParser('python -m 2024.9.main', description="Advent of Code 2024 Day 9")
@@ -93,7 +101,7 @@ if __name__ == '__main__':
         case -1:
             answer = disk_map.esrap()
         case 1:
-            answer = frag_and_checksum(disk_map)
+            answer = compact_and_checksum(disk_map)
         case 2:
             answer = answer2(disk_map)
 
