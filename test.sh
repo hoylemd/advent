@@ -98,8 +98,7 @@ if [ "$VERBOSE" = true ]; then
   printf "${RED}Verbose mode activated.${NC}%s\n" "$debug_msg"
 fi
 
-while read -r spec; do
-  args=("$spec")
+while read -ra args; do
   path=$year/$day/${args[0]}
   part=${args[1]}
   answer=${args[2]}
