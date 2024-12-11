@@ -14,6 +14,7 @@ class StoneArray:
         self.part = part
 
         self.stones = list(self.parse_lines(lines))
+        self.memory: dict[tuple[int, int], int] = {}
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(part {self.part})"
@@ -26,20 +27,57 @@ class StoneArray:
     def esrap_lines(self) -> str:
         return ' '.join(f"{stone}" for stone in self.stones)
 
-def answer2(stone_array: StoneArray) -> int:
+    def blink(self, stone: int) -> list[int]:
+        if stone == 0:
+            return [1]
+        elif len(stone_str := f"{stone}") % 2 == 0:
+            l, r = stone_str[:len(stone_str) // 2], stone_str[len(stone_str) // 2:]
+            return [int(l), int(r)]
+
+        return [stone * 2024]
+
+    def blink_all(self) -> list[int]:
+        new_stones = []
+        for stone in self.stones:
+            new_stones += self.blink(stone)
+
+        return new_stones
+
+    def count_stones(self, stone: int, n: int) -> int:
+        if n < 1:
+            return 1
+
+        if count := self.memory.get((stone, n)):
+            return count
+
+        next_stones = self.blink(stone)
+
+        count = sum(self.count_stones(next_stone, n-1) for next_stone in next_stones)
+
+        self.memory[stone, n] = count
+
+        return count
+
+
+def blink_quietly(stone_array: StoneArray, blinks: int) -> int:
     accumulator = 0
 
-    # solve part 2
+    for stone in stone_array.stones:
+        accumulator += stone_array.count_stones(stone, blinks)
 
     return accumulator
 
 
-def answer1(stone_array: StoneArray) -> int:
-    accumulator = 0
+def blink_verbosely(stone_array: StoneArray, blinks: int) -> int:
+    logger.info(f"Initial arrangement:")
+    logger.info(stone_array.esrap_lines() + '\n')
 
-    # solve part 1
+    for i in range(blinks):
+        stone_array.stones = stone_array.blink_all()
+        logger.info(f"After {i + 1} blinks")
+        logger.info(stone_array.esrap_lines() + '\n')
 
-    return accumulator
+    return len(stone_array.stones)
 
 
 arg_parser = ArgumentParser('python -m 2024.11.main', description="Advent of Code 2024 Day 11")
@@ -54,10 +92,12 @@ if __name__ == '__main__':
     match argus.part:
         case -1:
             answer = stone_array.esrap_lines()
+        case -2:
+            answer = blink_verbosely(stone_array, 6)
         case 1:
-            answer = answer1(stone_array)
+            answer = blink_quietly(stone_array, 25)
         case 2:
-            answer = answer2(stone_array)
+            answer = blink_quietly(stone_array, 75)
 
     logger.debug('')
 
