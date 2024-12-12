@@ -3,14 +3,6 @@ from utils import logger, parse_input
 from typing import Iterator
 
 
-def parse_line(line: str) -> str:
-    return line
-
-
-def esrap_line({{element}}) -> str:
-    return f"{element}"
-
-
 class {{class}}:
 
     def __init__(self, {{doc_name}}: Iterator[str], part: int = 1):
@@ -21,13 +13,19 @@ class {{class}}:
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(part {self.part})"
 
+    def parse_line(self, y: int, line: str) -> str:
+        return line
+
     def parse_lines(self, lines: Iterator[str]) -> Iterator:
-        for line in lines:
-            yield parse_line(line)
+        for y, line in enumerate(lines):
+            yield self.parse_line(y, line)
+
+    def esrap_line(self, y: int, element: str) -> str:
+        return f"{element}"
 
     def esrap_lines(self) -> str:
         return '\n'.join(
-            esrap_line(e) for e in self.{{element}}s
+            self.esrap_line(y, e) for y, e in enumerate(self.{{element}}s)
         )
 
 def {{p2_function}}({{obj}}: {{class}}) -> int:
