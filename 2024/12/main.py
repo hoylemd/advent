@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Mapping
+from collections import defaultdict
 
-from utils import logger, parse_input, CharGrid, coordinates
+from utils import logger, parse_input, CharGrid, coordinates, INFINITY
 
 type stripe = tuple[str, int, int] # crop, offset, length
 
@@ -9,12 +10,70 @@ type stripe = tuple[str, int, int] # crop, offset, length
 class Region:
     def __init__(self, first_y: int, first_stripe: stripe):
         self.crop = first_stripe[0]
+        """
         self.y = first_y
         self.x = first_stripe[1]
         self.height = 1
         self.width = first_stripe[2]
+        """
+        self.stripes = defaultdict(list[stripe])
 
-        self.stripes = [first_stripe]
+        self._add_stripe(first_y, first_stripe)
+
+    def _add_stripe(self, y: int, next_stripe: stripe):
+        c, x, l = next_stripe
+
+        if c != self.crop:
+            raise ValueError('Cannot add stripe of different crop')
+
+        """
+        if (delta_y := y - self.y) < 0:
+            self.y = y
+            self.height += delta_y
+
+        if (delta_x := x - self.x) < 0:
+            self.x
+        """
+        current_row = self.stripes[y]
+        current_row.append(next_stripe)
+
+        self.stripes[y] = sorted(current_row, key=lambda s: s[1])
+
+    def add_stripe(self, y: int, next_stripe: stripe):
+        self._add_stripe(y, next_stripe)
+        self.compute_bounds()
+
+    def add_stripes(self, stripes: Mapping[int, list[stripe]]):
+        for y, y_stripes in stripes.items():
+            for s in y_stripes:
+                self._add_stripe(y, s)
+
+        self.compute_bounds()
+
+    def compute_bounds(self):
+        ys = sorted(self.stripes.keys())
+
+        self.y = ys[0]
+        self.height = len(ys)
+
+        self.x = INFINITY
+        right = 0
+        for y in ys:
+            for s in self.stripes[y]:
+                s_right = s[1] + s[2]
+
+                if self.x is None:
+                    self.x = s[1]
+
+                if s[1] < self.x:
+                    # if new stripe offset is to the left
+                    self.x = s[1]
+
+                if s_right > right:
+                    # if new right is to the right
+                    right = s_right
+
+        self.width = right - self.x
 
 
 class GardenMap(CharGrid):
