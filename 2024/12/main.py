@@ -7,6 +7,18 @@ from utils import logger, parse_input, CharGrid, coordinates, INFINITY
 type stripe = tuple[str, int, int] # crop, offset, length
 
 
+def stripes_overlap(first: stripe, second: stripe) -> bool:
+    return calc_overlap(first, second) > 0
+
+def calc_overlap(first: stripe, second: stripe) -> int:
+    if first[1] > second[1]:
+        first, second = second, first
+
+    return first[1] + first[2] - second[1]
+
+
+
+
 class Region:
     def __init__(self, first_y: int, first_stripe: stripe):
         self.crop = first_stripe[0]
@@ -18,7 +30,7 @@ class Region:
         """
         self.stripes = defaultdict(list[stripe])
 
-        self._add_stripe(first_y, first_stripe)
+        self.add_stripe(first_y, first_stripe)
 
     def _add_stripe(self, y: int, next_stripe: stripe):
         c, x, l = next_stripe
@@ -75,6 +87,48 @@ class Region:
 
         self.width = right - self.x
 
+    def can_merge(self, other_y: int, other: stripe) -> bool:
+        if other[0] != self.crop:
+            # wrong crop
+            return False
+
+        for b_stripe in self.stripes[other_y -1]:
+            if stripes_overlap(b_stripe, other):
+                return True
+
+        return False
+
+    def __str__(self) -> str:
+        return f"Region of {self.crop} from {self.y}, {self.x} to {self.y + self.height - 1}, {self.x + self.width - 1}"
+
+    def __repr__(self) -> str:
+        return f"{self}"
+
+    def render_row(self, y: int, full_width: int) -> str:
+        buffer = ''
+        return buffer
+
+
+    def render(self, full_height: int, full_width: int) -> str:
+        return '\n'.join(
+            self.render_row(y, full_width)
+            for y in range(full_height)
+        )
+
+    def price(self) -> int:
+        area = 0
+        perimeter = sum(s[2] for s in self.stripes[self.y]) # top edge
+        prev_row = []
+
+        for y, stripes in self.stripes.items():
+            perimeter += 2 * len(stripes) # sides
+            # top edge(s)
+            for p_r_stripe in self.stripes[y - 1]:
+
+        return area * perimeter
+
+
+
 
 class GardenMap(CharGrid):
 
@@ -83,7 +137,7 @@ class GardenMap(CharGrid):
 
         self.rows = list(self.parse_lines(lines))
 
-        self.regions = list(self.merge_regions())
+        self.regions = self.merge_regions()
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(part {self.part})"
@@ -119,9 +173,37 @@ class GardenMap(CharGrid):
     def print_stripes(self) -> str:
         return '\n'.join(f"{row}" for row in self.rows)
 
-    def merge_regions(self) -> Iterator[Region]
-        pass
+    def merge_regions(self) -> list[Region]:
+        all_regions: list[Region] = []
+        prev_row_regions: list[Region] = []
+        this_row_regions: list[Region] = []
+        for y, row in enumerate(self.rows):
+            for i, stripe in enumerate(row):
+                this_region = None
+                for region in prev_row_regions:
 
+                    # if stripe[0] == 'V' and y == 5:
+                    #     breakpoint()
+
+                    if region.can_merge(y, stripe):
+                        if this_region is None:
+                            this_region = region
+                            region.add_stripe(y, stripe)
+                        else:
+                            this_region.add_stripes(region.stripes)
+                            all_regions.remove(region)
+
+                if this_region is None:
+                    this_region = Region(y, stripe)
+                    all_regions.append(this_region)
+
+                if this_region not in this_row_regions:
+                    this_row_regions.append(this_region)
+
+            prev_row_regions = this_row_regions
+            this_row_regions = []
+
+        return all_regions
 
 def answer2(garden: GardenMap) -> int:
     accumulator = 0
@@ -135,6 +217,7 @@ def answer1(garden: GardenMap) -> int:
     accumulator = 0
 
     logger.info(garden.print_stripes())
+    breakpoint()
     # solve part 1
 
     return accumulator
