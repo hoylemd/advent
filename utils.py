@@ -649,6 +649,11 @@ class CharGrid:
     def is_in_bounds(self, pos: coordinates) -> bool:
         return not self.is_out_of_bounds(pos)
 
+    def get(self, y: int, x: int):
+        if self.is_in_bounds((y, x)):
+            return self.lines[y][x]
+        return None
+
 
 CARDINAL_DIRECTIONS = [
     (-1, 0),
