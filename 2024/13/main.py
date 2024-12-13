@@ -39,6 +39,14 @@ class ClawMachine:
             f"Prize: X={self.a[0]}, Y={self.a[1]}",
         ])
 
+    def calc_presses(self) -> tuple[int, int]:
+        """cramer's rule yes of course i understand linear algebra and didnt cheat"""
+        determinant = (self.a[1] * self.b[0] - self.a[0] * self.b[1])
+        a_presses = (self.p[1] * self.b[0] - self.p[0] * self.b[1]) // determinant
+        b_presses = (self.p[0] * self.a[1] - self.a[0]*self.p[1]) // determinant
+
+        return (a_presses, b_presses)
+
 def parse_machines(lines: list[str], part: int=1) -> Iterator[ClawMachine]:
     for i in range((len(lines) // 4) + 1):
         yield ClawMachine(lines[i*4:(i+1)*4])
@@ -52,10 +60,18 @@ def answer2(machines: Iterator[ClawMachine]) -> int:
     return accumulator
 
 
-def answer1(machines: Iterator[ClawMachine]) -> int:
+def sum_cost(machines: Iterator[ClawMachine]) -> int:
     accumulator = 0
 
-    # solve part 1
+    for machine in machines:
+        a_presses, b_presses = machine.calc_presses()
+        logger.info(f"pressing A {a_presses} times and B {b_presses} times")
+        test = (a_presses * machine.a[0] + b_presses * machine.b[0], a_presses * machine.a[1] + b_presses * machine.b[1])
+        if test == machine.p:
+            logger.info('  PRIZE GET')
+            accumulator += a_presses*3 + b_presses
+        else:
+            logger.info('  RIGGED')
 
     return accumulator
 
@@ -73,7 +89,7 @@ if __name__ == '__main__':
         case -1:
             answer = '\n\n'.join(machine.esrap_lines() for machine in machines)
         case 1:
-            answer = answer1(machines)
+            answer = sum_cost(machines)
         case 2:
             answer = answer2(machines)
 
