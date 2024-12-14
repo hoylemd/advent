@@ -1,5 +1,5 @@
 test.txt -1 echo
 test.txt 1 480
 input.txt 1 -
-test.txt 2 -
+test.txt 2 875318608908
 input.txt 2 -

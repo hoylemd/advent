@@ -22,11 +22,16 @@ class ClawMachine:
         a_mat = A_PATT.match(lines[0])
         b_mat = B_PATT.match(lines[1])
         p_mat = P_PATT.match(lines[2])
+        p_offset = (10_000_000_000_000, 10_000_000_000_000) if self.part == 2 else (0, 0)
 
         if a_mat is None or b_mat is None or p_mat is None:
             raise ValueError("Parsing error")
 
-        return (int(a_mat[1]), int(a_mat[2])), (int(b_mat[1]), int(b_mat[2])), (int(p_mat[1]), int(p_mat[2]))
+        return (
+            (int(a_mat[1]), int(a_mat[2])),
+            (int(b_mat[1]), int(b_mat[2])),
+            (int(p_mat[1]) + p_offset[0], int(p_mat[2]) + p_offset[1])
+        )
 
 
     def esrap_line(self, y: int, element: str) -> str:
@@ -49,15 +54,7 @@ class ClawMachine:
 
 def parse_machines(lines: list[str], part: int=1) -> Iterator[ClawMachine]:
     for i in range((len(lines) // 4) + 1):
-        yield ClawMachine(lines[i*4:(i+1)*4])
-
-
-def answer2(machines: Iterator[ClawMachine]) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
+        yield ClawMachine(lines[i*4:(i+1)*4], part=part)
 
 
 def sum_cost(machines: Iterator[ClawMachine]) -> int:
@@ -91,7 +88,7 @@ if __name__ == '__main__':
         case 1:
             answer = sum_cost(machines)
         case 2:
-            answer = answer2(machines)
+            answer = sum_cost(machines)
 
     logger.debug('')
 
