@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from typing import Iterator, Mapping
 from collections import defaultdict
 
-from utils import logger, parse_input, CharGrid, coordinates, INFINITY
+from utils import logger, parse_input, CharGrid, coordinates, INFINITY, DIAGONAL_DIRECTIONS
 
 
 class Region:
@@ -17,17 +17,15 @@ class Region:
         self.width = 1
         self.points: set[coordinates] = set()
         self.edges: set[coordinates] = set()
-        self.ext_corners: set[coordinates] = set()
-        self.int_corners: set[coordinates] = set()
-        self.adjacency = defaultdict(set)
+        self.adjacency: defaultdict[coordinates, set[coordinates]] = defaultdict(set)
 
     @property
     def right(self):
-        return self.x + self.width
+        return self.x + (self.width - 1)
 
     @property
     def bottom(self):
-        return self.y + self.height
+        return self.y + (self.height - 1)
 
     def add_point(self, y: int, x: int):
         self.points.add((y, x))
@@ -37,13 +35,14 @@ class Region:
             self.y = y
 
         if y > self.bottom:
-            self.height += y - self.bottom
+            self.height = y - self.y
 
         if x < self.x:
             self.width += self.x - x
+            self.x = x
 
-        if x > self.bottom:
-            self.width += x - self.bottom
+        if x > self.right:
+            self.width = x - self.x
 
         self.parent.region_map[y][x] = self
 
@@ -96,8 +95,50 @@ class Region:
 
         return p
 
+    def count_internal_corners(self, y: int, x: int) -> int:
+        corners = 0
+
+        for dy, dx in self.parent.get_diagonal_coordinates(y, x):
+            if self.parent.region_map[dy][dx] is self:
+                continue
+
+            if (self.parent.region_map[y][dx] is self and self.parent.region_map[dy][x] is self):
+                corners += 1
+
+        return corners
+
+    def check_corners(self, y: int, x: int) -> int:
+        external = 0
+        adj = list(self.adjacency[y, x])
+
+        if len(adj) == 0:
+            return 4
+        elif len(adj) == 1:
+            return 2
+        elif len(adj) == 2:
+            # if opposing corners, no corner
+            dy1, dx1 = y - adj[0][0], x - adj[0][1]
+            dy2, dx2 = y - adj[1][0], x - adj[1][1]
+
+            dy, dx = dy1 + dy2, dx1 + dx2
+
+            # straight segment: 0, corner: 1
+            external = 0 if (dy, dx) == (0, 0) else 1
+
+        return self.count_internal_corners(y, x) + external
+
+    def count_corners(self) -> int:
+        corners = 0
+        for y, x in self.points:
+            yx_corners = self.check_corners(y, x)
+            if yx_corners:
+                logger.info(f"{y, x} has {yx_corners} corners")
+            corners += yx_corners
+
+        return corners
+
     def price(self) -> int:
-        return len(self.points) * self.count_perimeter()
+        return len(self.points) * (self.count_perimeter() if self.parent.part == 1 else self.count_corners())
 
     def render_cell(self, y: int, x: int) -> str:
         assert self.crop is not None
@@ -134,18 +175,16 @@ class GardenMap(CharGrid):
                     new_region.map_region()
 
 
-def answer2(garden: GardenMap) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
-
-
 def fence_prices(garden: GardenMap) -> int:
     accumulator = 0
     for region in garden.regions:
-        accumulator += region.price()
+        logger.info(region)
+        logger.info(region.render())
+        price = region.price()
+        logger.info(f"price: {price}")
+
+        accumulator += price
+        logger.info('')
 
     return accumulator
 
@@ -162,10 +201,8 @@ if __name__ == '__main__':
     match argus.part:
         case -1:
             answer = garden.esrap_lines()
-        case 1:
+        case _:
             answer = fence_prices(garden)
-        case 2:
-            answer = answer2(garden)
 
     logger.debug('')
 
