@@ -1,16 +1,30 @@
 from argparse import ArgumentParser
 from typing import Iterable
 
-from utils import logger, parse_input, CharGrid, DIRECTION_MAP
+from utils import logger, parse_input, CharGrid, DIRECTION_MAP, coordinates
 
 type cell_content = str | Mobile
 
 
 class Mobile:
-    def __init__(self, parent: 'Warehouse', y: int, x: int):
+    def __init__(self, parent: 'Warehouse', y: int, x: int, shape: list[coordinates] = []):
         self.parent = parent
+        self.shape = shape if shape else [(0, 0)]
         self.y = y
         self.x = x
+        self.symbols = '?'
+
+    def can_push(self, dy: int, dx: int) -> bool:
+        dests = [(self.y + sy + dy, self.x + sx + dx) for sy, sx in self.shape]
+
+        contents = list(set(self.parent.lines[ty][tx] for ty, tx in dests))
+        for dest_content in contents:
+            if dest_content == '.':
+                continue
+            elif dest_content == '#':
+                return False
+
+        return True
 
     def push(self, dy: int, dx: int) -> bool:
         ty, tx = self.y + dy, self.x + dx
@@ -32,10 +46,22 @@ class Mobile:
             return False
 
     def move_to(self, y: int, x: int):
-        self.parent.lines[self.y][self.x] = '.'
-        self.parent.lines[y][x] = self
+        for py, px in self.shape:
+            self.parent.lines[self.y + py][self.x + px] = '.'
+            self.parent.lines[y + py][x + px] = self
+
         self.y = y
         self.x = x
+
+    def esrap(self, y: int, x: int) -> str:
+        for i, (sy, sx) in enumerate(self.shape):
+            if (y, x) == (self.y + sy, self.x + sx):
+                return self.symbols[i]
+
+        raise ValueError(f"Tried to esrap invalid cell ({y, x}) on obj at ({self.y, self.x}) with shape: {self.shape}")
+
+    def __str__(self) -> str:
+        return self.symbols
 
 
 class Robot(Mobile):
@@ -43,9 +69,7 @@ class Robot(Mobile):
         super().__init__(parent, y, x)
         self.instructions = ''
         self.counter = 0
-
-    def __str__(self) -> str:
-        return '@'
+        self.symbols = '@'
 
     def esrap_instructions(self, wrap_at: int) -> Iterable[str]:
         prev = 0
@@ -62,16 +86,18 @@ class Robot(Mobile):
 
         return self.push(dy, dx)
 
-class Box(Mobile):
-    def __init__(self, parent: 'Warehouse', id: int, y: int, x: int):
-        self.id = id
-        super().__init__(parent, y, x)
 
-    def __str__(self) -> str:
-        return 'O'
+class Box(Mobile):
+    def __init__(self, parent: 'Warehouse', id: int, y: int, x: int, width: int = 1):
+        self.id = id
+        self.width = width
+        shape = [(0, 0)] if width == 1 else [(0, 0), (0, 1)]
+        super().__init__(parent, y, x, shape=shape)
+
+        self.symbols = 'O' if width == 1 else '[]'
 
     def get_GPS(self):
-        return 100* self.y + self.x
+        return 100 * self.y + self.x
 
 
 class Warehouse(CharGrid):
@@ -97,17 +123,31 @@ class Warehouse(CharGrid):
 
         return c
 
+    def parse_cell_wide(self, y: int, x: int, c: str) -> list[cell_content]:
+        if c == 'O':
+            new_box = Box(self, len(self.boxes), y, x * self.part, width=self.part)
+            self.boxes.append(new_box)
+            return [new_box, new_box]
+
+        if c == '@':
+            self.robot = Robot(self, y, x * self.part)
+            return [self.robot, '.']
+
+        return [c, c]
+
     def parse_line(self, y: int, line: str) -> list[cell_content]:
-        return [
-            self.parse_cell(y, x, c)
-            for x, c in enumerate(line)
-        ]
+        content = []
+        for x, c in enumerate(line):
+            content += [self.parse_cell(y, x, c)] if self.part == 1 else self.parse_cell_wide(y, x, c)
+
+        return content
 
     def parse_lines(self, lines: list[str]) -> Iterable[Iterable[cell_content]]:
         blank_index = lines.index('')
         map_lines = lines[:blank_index]
 
         grid = list(super().parse_lines(map_lines))
+        self.width = self.width * self.part
 
         assert self.robot is not None
 
@@ -115,6 +155,16 @@ class Warehouse(CharGrid):
         self.robot.instructions = ''.join(line for line in lines[blank_index:])
 
         return grid
+
+    def esrap_cell(self, y: int, x: int) -> str:
+        content = self.get(y, x)
+
+        if isinstance(content, Mobile):
+            return content.esrap(y, x)
+
+        assert content is not None
+
+        return content
 
     def esrap_lines(self) -> str:
         grid = super().esrap_lines()
@@ -126,17 +176,12 @@ class Warehouse(CharGrid):
         return '\n'.join(parts)
 
 
-def answer2(warehouse: Warehouse) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
-
-
 def simulate_robot(warehouse: Warehouse) -> int:
     assert warehouse.robot is not None
 
+    logger.info(warehouse.esrap_lines())
+
+    breakpoint()
     for _ in warehouse.robot.instructions:
         warehouse.robot.step()
 
@@ -155,10 +200,8 @@ if __name__ == '__main__':
     match argus.part:
         case -1:
             answer = warehouse.esrap_lines()
-        case 1:
+        case _:
             answer = simulate_robot(warehouse)
-        case 2:
-            answer = answer2(warehouse)
 
     logger.debug('')
 
