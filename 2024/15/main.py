@@ -1,16 +1,46 @@
 from argparse import ArgumentParser
 from typing import Iterable
 
-from utils import logger, parse_input, CharGrid
+from utils import logger, parse_input, CharGrid, DIRECTION_MAP
 
-type cell_content = str | Robot | Box
+type cell_content = str | Mobile
 
 
-class Robot:
+class Mobile:
     def __init__(self, parent: 'Warehouse', y: int, x: int):
         self.parent = parent
         self.y = y
         self.x = x
+
+    def push(self, dy: int, dx: int) -> bool:
+        ty, tx = self.y + dy, self.x + dx
+
+        if self.parent.is_out_of_bounds((ty, tx)):
+            return False
+
+        dest_content = self.parent.lines[ty][tx]
+        if dest_content == '.':
+            self.move_to(ty, tx)
+            return True
+        elif dest_content == '#':
+            return False
+        else:  # is another Mobile
+            assert isinstance(dest_content, Mobile)
+            if dest_content.push(dy, dx):
+                self.move_to(ty, tx)
+                return True
+            return False
+
+    def move_to(self, y: int, x: int):
+        self.parent.lines[self.y][self.x] = '.'
+        self.parent.lines[y][x] = self
+        self.y = y
+        self.x = x
+
+
+class Robot(Mobile):
+    def __init__(self, parent: 'Warehouse', y: int, x: int):
+        super().__init__(parent, y, x)
         self.instructions = ''
         self.counter = 0
 
@@ -25,16 +55,23 @@ class Robot:
             prev = next_break
             next_break += wrap_at
 
+    def step(self) -> bool:
+        dy, dx = DIRECTION_MAP[self.instructions[self.counter]]
 
-class Box:
+        self.counter = (self.counter + 1) % len(self.instructions)
+
+        return self.push(dy, dx)
+
+class Box(Mobile):
     def __init__(self, parent: 'Warehouse', id: int, y: int, x: int):
-        self.parent = parent
         self.id = id
-        self.y = y
-        self.x = x
+        super().__init__(parent, y, x)
 
     def __str__(self) -> str:
         return 'O'
+
+    def get_GPS(self):
+        return 100* self.y + self.x
 
 
 class Warehouse(CharGrid):
@@ -45,6 +82,7 @@ class Warehouse(CharGrid):
         self.boxes = []
         self.instructions_wrap = 0
 
+        self.lines: list[list[cell_content]]
         super().__init__(lines)
 
     def parse_cell(self, y: int, x: int, c: str) -> cell_content:
@@ -96,12 +134,13 @@ def answer2(warehouse: Warehouse) -> int:
     return accumulator
 
 
-def answer1(warehouse: Warehouse) -> int:
-    accumulator = 0
+def simulate_robot(warehouse: Warehouse) -> int:
+    assert warehouse.robot is not None
 
-    # solve part 1
+    for _ in warehouse.robot.instructions:
+        warehouse.robot.step()
 
-    return accumulator
+    return sum(box.get_GPS() for box in warehouse.boxes)
 
 
 arg_parser = ArgumentParser('python -m 2024.15.main', description="Advent of Code 2024 Day 15")
@@ -117,7 +156,7 @@ if __name__ == '__main__':
         case -1:
             answer = warehouse.esrap_lines()
         case 1:
-            answer = answer1(warehouse)
+            answer = simulate_robot(warehouse)
         case 2:
             answer = answer2(warehouse)
 
