@@ -14,17 +14,44 @@ class Mobile:
         self.x = x
         self.symbols = '?'
 
-    def can_push(self, dy: int, dx: int) -> bool:
-        dests = [(self.y + sy + dy, self.x + sx + dx) for sy, sx in self.shape]
+    def dest_cells(self, dy: int, dx: int) -> list[coordinates]:
+        return [(self.y + sy + dy, self.x + sx + dx) for sy, sx in self.shape]
 
-        contents = list(set(self.parent.lines[ty][tx] for ty, tx in dests))
-        for dest_content in contents:
+    def dest_content(self, dy: int, dx: int) -> list[cell_content]:
+        dests = self.dest_cells(dy, dx)
+
+        candidates = [self.parent.lines[ty][tx] for ty, tx in dests]
+        return list(set(c for c in candidates if c is not self))
+
+    def can_push(self, dy: int, dx: int) -> bool:
+        dcs = self.dest_content(dy, dx)
+        for dest_content in dcs:
             if dest_content == '.':
                 continue
             elif dest_content == '#':
                 return False
 
+            assert isinstance(dest_content, Mobile)
+
+            if dest_content.can_push(dy, dx):
+                continue
+            else:
+                return False
+
         return True
+
+    def do_push(self, dy: int, dx: int):
+        already_pushed: list[Mobile] = [self]
+        for ty, tx in self.dest_cells(dy, dx):
+            dest_content = self.parent.lines[ty][tx]
+            if dest_content == '#':
+                raise ValueError(f"tried to push ({dy, dx}) into wall at ({self.y + dy, self.x + dx})")
+
+            if isinstance(dest_content, Mobile) and dest_content not in already_pushed:
+                dest_content.do_push(dy, dx)
+                already_pushed.append(dest_content)
+
+        self.move_to(self.y + dy, self.x + dx)
 
     def push(self, dy: int, dx: int) -> bool:
         ty, tx = self.y + dy, self.x + dx
@@ -32,22 +59,17 @@ class Mobile:
         if self.parent.is_out_of_bounds((ty, tx)):
             return False
 
-        dest_content = self.parent.lines[ty][tx]
-        if dest_content == '.':
-            self.move_to(ty, tx)
+        if self.can_push(dy, dx):
+            self.do_push(dy, dx)
             return True
-        elif dest_content == '#':
-            return False
-        else:  # is another Mobile
-            assert isinstance(dest_content, Mobile)
-            if dest_content.push(dy, dx):
-                self.move_to(ty, tx)
-                return True
-            return False
+
+        return False
 
     def move_to(self, y: int, x: int):
         for py, px in self.shape:
             self.parent.lines[self.y + py][self.x + px] = '.'
+
+        for py, px in self.shape:
             self.parent.lines[y + py][x + px] = self
 
         self.y = y
@@ -86,6 +108,13 @@ class Robot(Mobile):
 
         return self.push(dy, dx)
 
+    def status(self) -> str:
+        return (
+            f"moved {self.instructions[self.counter - 1]}, "
+            f"on instruction # {self.counter} / {len(self.instructions)}. "
+            f"Next is {self.instructions[self.counter] if self.counter < len(self.instructions) else 'DONE'}"
+        )
+
 
 class Box(Mobile):
     def __init__(self, parent: 'Warehouse', id: int, y: int, x: int, width: int = 1):
@@ -98,6 +127,9 @@ class Box(Mobile):
 
     def get_GPS(self):
         return 100 * self.y + self.x
+
+    def __repr__(self) -> str:
+        return f"<Box #{self.id} at {self.y, self.x}>"
 
 
 class Warehouse(CharGrid):
@@ -175,15 +207,21 @@ class Warehouse(CharGrid):
         parts = [grid, ''] + instructions
         return '\n'.join(parts)
 
+    def render(self) -> str:
+        grid = super().esrap_lines()
+
+        assert self.robot is not None
+        return '\n'.join([grid, self.robot.status()])
+
 
 def simulate_robot(warehouse: Warehouse) -> int:
     assert warehouse.robot is not None
 
     logger.info(warehouse.esrap_lines())
 
-    breakpoint()
     for _ in warehouse.robot.instructions:
         warehouse.robot.step()
+        # logger.info(warehouse.render())
 
     return sum(box.get_GPS() for box in warehouse.boxes)
 

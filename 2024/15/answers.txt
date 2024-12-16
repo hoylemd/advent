@@ -2,5 +2,5 @@ test.txt -1 echo
 test.txt 1 2028
 test2.txt 1 10092
 input.txt 1 -
-test.txt 2 -
+test2.txt 2 9021
 input.txt 2 -
