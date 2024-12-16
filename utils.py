@@ -1,7 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
-from typing import Iterator, Generator, Callable, Optional, Any, Mapping
+from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -604,7 +604,7 @@ class CharGrid:
         Assumes it's a rectangular grid, but it need not be square
     """
 
-    def __init__(self, lines: Iterator[str]):
+    def __init__(self, lines: Iterable[str]):
         self.height = 0
         self.width = 0
 
@@ -619,7 +619,7 @@ class CharGrid:
         """
         return line
 
-    def parse_lines(self, lines: Iterator[str]) -> Iterator[str]:
+    def parse_lines(self, lines: Iterable[str]) -> Iterable[str]:
         """Feed in the lines from input, parse each one, and emit the lines
 
         Add any additional parsing logic here (i.e. parsing out positions of things)
@@ -634,10 +634,12 @@ class CharGrid:
 
             yield self.parse_line(y, line)
 
+    def esrap_cell(self, y: int, x: int) -> str:
+        return str(self.get(y, x))
+
     def esrap_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
-        line = self.lines[y]
         return ''.join(
-            annotations.get((y, x), line[x]) for x in range(self.width)
+            annotations.get((y, x), self.esrap_cell(y, x)) for x in range(self.width)
         )
 
     def esrap_lines(self, annotations: Mapping[coordinates, str] = {}) -> str:
@@ -654,13 +656,49 @@ class CharGrid:
             return self.lines[y][x]
         return None
 
+    def get_transformed_coordinates(self, y: int, x: int, transforms: Iterable[coordinates]) -> Iterator[coordinates]:
+        for dy, dx in transforms:
+            candidate = (y + dy, x + dx)
+            if self.is_in_bounds(candidate):
+                yield candidate
 
+    def get_adjacent_coordinates(self, y: int, x: int) -> Iterator[coordinates]:
+        return self.get_transformed_coordinates(y, x, CARDINAL_DIRECTIONS)
+
+    def get_diagonal_coordinates(self, y: int, x: int) -> Iterator[coordinates]:
+        return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS)
+
+
+# N, clockwise
 CARDINAL_DIRECTIONS = [
     (-1, 0),
     (0, 1),
     (1, 0),
     (0, -1)
 ]
+
+# NW, clockwise
+DIAGONAL_DIRECTIONS = [
+    (-1, -1),
+    (-1, 1),
+    (1, 1),
+    (1, -1)
+]
+
+DIRECTION_MAP = {
+    'L': (0, -1),
+    'U': (-1, 0),
+    'R': (0, 1),
+    'D': (1, 0),
+    '<': (0, -1),
+    '^': (-1, 0),
+    '>': (0, 1),
+    'v': (1, 0),
+    'W': (0, -1),
+    'N': (-1, 0),
+    'E': (0, 1),
+    'S': (1, 0),
+}
 
 
 INFINITY = 999_999_999_999_999
