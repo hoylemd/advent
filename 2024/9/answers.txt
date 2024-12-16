@@ -1,5 +1,5 @@
 test.txt -1 echo
 test.txt 1 1928
-input.txt 1 -
+input.txt 1 6398252054886
 test.txt 2 2858
-input.txt 2 -
+input.txt 2 6415666220005
