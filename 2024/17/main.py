@@ -3,38 +3,30 @@ from typing import Iterator
 
 from utils import logger, parse_input
 
+# Register aliases
+A = 0
+B = 1
+C = 2
+
 class ChronospatialComputer:
 
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
-        self.registers = [0, 0, 0] # A, B, C
+        self.register = [0, 0, 0] # A, B, C
         self.i_ptr = 0
 
         self.program = self.parse_lines(lines)
 
-    @property
-    def reg_a(self):
-        return self.registers[0]
-
-    @reg_a.setter
-    def reg_a(self, value):
-        self.registers[0] = value
-
-    @property
-    def reg_b(self):
-        return self.registers[1]
-
-    @reg_b.setter
-    def reg_b(self, value):
-        self.registers[1] = value
-
-    @property
-    def reg_c(self):
-        return self.registers[2]
-
-    @reg_c.setter
-    def reg_c(self, value):
-        self.registers[2] = value
+        self.opcodes = [
+            self.adv,
+            self.bxl,
+            self.bst,
+            self.jnz,
+            self.bxc,
+            self.out,
+            self.bdv,
+            self.cdv
+        ]
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(part {self.part})"
@@ -45,7 +37,7 @@ class ChronospatialComputer:
                 continue
             content = line.split(': ')[1]
             if y < 3:
-                self.registers[y] = int(content)
+                self.register[y] = int(content)
             if y == 4:
                 return [int(c) for c in content.split(',')]
 
@@ -53,15 +45,54 @@ class ChronospatialComputer:
 
     def esrap_lines(self) -> str:
         return '\n'.join([
-            f"Register A: {self.reg_a}",
-            f"Register B: {self.reg_b}",
-            f"Register C: {self.reg_c}",
+            f"Register A: {self.register[A]}",
+            f"Register B: {self.register[B]}",
+            f"Register C: {self.register[C]}",
             "",
             f"Program: {','.join(str(i) for i in self.program)}"
         ])
 
+    def combo(self, operand: int) -> int:
+        if operand < 4:
+            return operand
+        if operand < 7:
+            return self.register[operand - 4]
+
+        raise IndexError('invalid combo operand')
+
+    def div_to_register(self, operand: int, dest_reg: int):
+        num = self.register[A]
+        den = 2 ** self.combo(operand)
+
+        self.register[dest_reg] = num // den
+
     def adv(self, operand: int):
         """opcode 0, division"""
+        self.div_to_register(operand, A)
+
+    def bxl(self, operand: int):
+        self.register[B] ^= operand
+
+    def bst(self, operand: int):
+        self.register[B] = self.combo(operand) % 8
+
+    def jnz(self, operand: int):
+        if self.register[A]:
+            self.i_ptr = operand
+
+    def bxc(self, _: int):
+        self.register[B] ^= self.register[C]
+
+    def out(self, operand: int) -> int:
+        return self.combo(operand) % 8
+
+    def bdv(self, operand: int):
+        """opcode 0, division"""
+        self.div_to_register(operand, B)
+
+    def cdv(self, operand: int):
+        """opcode 0, division"""
+        self.div_to_register(operand, C)
 
 def answer2(computer: ChronospatialComputer) -> int:
     accumulator = 0
