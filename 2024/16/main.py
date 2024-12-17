@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
 from typing import Iterator
+import itertools
 
-from utils import logger, parse_input, CharGrid, coordinates
+from utils import logger, parse_input, CharGrid, coordinates, CARDINAL_DIRECTIONS, INFINITY, DIRECTION_MAP
 
 
 class ReindeerMaze(CharGrid):
@@ -12,6 +13,9 @@ class ReindeerMaze(CharGrid):
         self.end = (0, 0)
 
         super().__init__(lines)
+        self.nav_map: list[list[tuple[int, coordinates]]] = self.add_layer((INFINITY, DIRECTION_MAP['E']))
+        self.nav_map[self.start[0]][self.start[1]] = (0, DIRECTION_MAP['E'])
+        self.unvisited = set(itertools.product(range(self.height), range(self.width)))
 
     def parse_cell(self, y: int, x: int, c: str) -> str:
         if c == 'S':
@@ -22,19 +26,62 @@ class ReindeerMaze(CharGrid):
 
         return c
 
+    def pop_shortest_unvisited(self) -> tuple[coordinates, int, coordinates]:
+        sy, sx = -1, -1
+        shortest = INFINITY
+        s_dir = DIRECTION_MAP['E']
+
+        for uy, ux in self.unvisited:
+            dist, dir = self.nav_map[uy][ux]
+            if dist < shortest:
+                sy, sx = uy, ux
+                shortest = dist
+                s_dir = dir
+
+        self.unvisited.remove((sy, sx))
+
+        return (sy, sx), shortest, s_dir
+
+
+    def djikstra(self) -> int:
+        """Hello djikstra my old friend"""
+        y, x = -1, -1
+
+        def is_open_and_unvisited(y: int, x: int) -> bool:
+            return self.lines[y][x] != '#' and (y, x) in self.unvisited
+
+        while(len(self.unvisited)): # technically should also check for all-infinity, but that wont happen
+            (y, x), distance, (hy, hx) = self.pop_shortest_unvisited()
+            logger.info(f"At {y, x}, current distance is {distance}, heading {hy, hx}")
+
+            if distance == INFINITY:
+                # shortest unvisited is unreachable what
+                breakpoint()
+
+            if (y, x) == self.end:
+                return distance # shortest path found! (probably)
+
+            for cy, cx in self.get_adjacent_coordinates(y, x, test=is_open_and_unvisited):
+                cost_from_here = distance + 1
+                if (cy, cx) != (y + hy, x + hx):
+                    cost_from_here += 1000
+
+                logger.info(f"checking {cy, cx}: {cost_from_here}")
+
+                if cost_from_here < self.nav_map[cy][cx][0]:
+                    logger.info(f"  shorter than {self.nav_map[cy][cx][0]}")
+                    self.nav_map[cy][cx] = (cost_from_here, (cy - y, cx - x))
+
+
+        breakpoint()
+        return distance
+
+
 
 def answer2(maze: ReindeerMaze) -> int:
     accumulator = 0
 
     # solve part 2
-
-    return accumulator
-
-
-def answer1(maze: ReindeerMaze) -> int:
-    accumulator = 0
-
-    # solve part 1
 
     return accumulator
 
@@ -52,7 +99,7 @@ if __name__ == '__main__':
         case -1:
             answer = maze.esrap_lines()
         case 1:
-            answer = answer1(maze)
+            answer = maze.djikstra()
         case 2:
             answer = answer2(maze)
 
