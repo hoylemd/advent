@@ -613,11 +613,13 @@ class CharGrid:
     def __str__(self):
         return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
 
+    def parse_cell(self, y: int, x: int, c: str) -> str:
+        """Parse a single cell, override this to add paring behaviour"""
+        return c
+
     def parse_line(self, y: int, line: str) -> str:
-        """Parse a single line. Just emits it back by default, but override this
-        to parse out puzzle elements
-        """
-        return line
+        """Parse a line, checking each char individually"""
+        return ''.join(self.parse_cell(y, x, c) for x, c in enumerate(line))
 
     def parse_lines(self, lines: Iterable[str]) -> Iterable[str]:
         """Feed in the lines from input, parse each one, and emit the lines
