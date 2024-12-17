@@ -658,17 +658,34 @@ class CharGrid:
             return self.lines[y][x]
         return None
 
-    def get_transformed_coordinates(self, y: int, x: int, transforms: Iterable[coordinates]) -> Iterator[coordinates]:
+    def get_transformed_coordinates(
+        self, y: int, x: int,
+        transforms: Iterable[coordinates],
+        test: Callable[[int, int], bool] | None = None
+    ) -> Iterator[coordinates]:
         for dy, dx in transforms:
             candidate = (y + dy, x + dx)
             if self.is_in_bounds(candidate):
-                yield candidate
+                if test is None:
+                    yield candidate
+                else:
+                    if test(*candidate):
+                        yield candidate
 
-    def get_adjacent_coordinates(self, y: int, x: int) -> Iterator[coordinates]:
-        return self.get_transformed_coordinates(y, x, CARDINAL_DIRECTIONS)
+    def get_adjacent_coordinates(
+        self, y: int, x: int,
+        test: Callable[[int, int], bool] | None = None
+    ) -> Iterator[coordinates]:
+        return self.get_transformed_coordinates(y, x, CARDINAL_DIRECTIONS, test=test)
 
-    def get_diagonal_coordinates(self, y: int, x: int) -> Iterator[coordinates]:
-        return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS)
+    def get_diagonal_coordinates(
+        self, y: int, x: int,
+        test: Callable[[int, int], bool] | None = None
+    ) -> Iterator[coordinates]:
+        return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
+
+    def add_layer(self, init_value: Any = None) -> list[list[Any]]:
+        return [([init_value] * self.width) for y in range(self.height)]
 
 
 # N, clockwise
