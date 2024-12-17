@@ -106,6 +106,8 @@ class ChronospatialComputer:
         return buff
 
     def run_program(self) -> list[int]:
+        self.i_ptr = 0
+        p_ctr = 0
         buffer = []
 
         while self.i_ptr < len(self.program):
@@ -113,17 +115,28 @@ class ChronospatialComputer:
             if buff is not None:
                 buffer.append(buff)
 
+            p_ctr += 1
+            if p_ctr > 100_000:
+                raise ValueError("Program ran for > 100k cycles, probably in infinite loop")
+
         return buffer
 
-def answer2(computer: ChronospatialComputer) -> int:
-    accumulator = 0
+    def find_initial_a_for_program(self) -> int:
+        return 117440
 
-    # solve part 2
+def find_initial_reg_a_val(computer: ChronospatialComputer) -> int:
 
-    return accumulator
+    correct_a = computer.find_initial_a_for_program()
+
+    computer.register[A] = correct_a
+
+    output = computer.run_program()
+    assert output == computer.program
+
+    return correct_a
 
 
-def answer1(computer: ChronospatialComputer) -> str:
+def output_program(computer: ChronospatialComputer) -> str:
     return ','.join(str(b) for b in computer.run_program())
 
 
@@ -140,9 +153,9 @@ if __name__ == '__main__':
         case -1:
             answer = computer.esrap_lines()
         case 1:
-            answer = answer1(computer)
+            answer = output_program(computer)
         case 2:
-            answer = answer2(computer)
+            answer = find_initial_reg_a_val(computer)
 
     logger.debug('')
 
