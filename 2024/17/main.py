@@ -94,6 +94,27 @@ class ChronospatialComputer:
         """opcode 0, division"""
         self.div_to_register(operand, C)
 
+    def step(self) -> None | int:
+        opcode, operand = self.program[self.i_ptr:self.i_ptr + 2]
+
+        i_ptr_mem = self.i_ptr
+        buff = self.opcodes[opcode](operand)
+
+        if self.i_ptr == i_ptr_mem:
+            self.i_ptr += 2
+
+        return buff
+
+    def run_program(self) -> list[int]:
+        buffer = []
+
+        while self.i_ptr < len(self.program):
+            buff = self.step()
+            if buff is not None:
+                buffer.append(buff)
+
+        return buffer
+
 def answer2(computer: ChronospatialComputer) -> int:
     accumulator = 0
 
@@ -102,12 +123,8 @@ def answer2(computer: ChronospatialComputer) -> int:
     return accumulator
 
 
-def answer1(computer: ChronospatialComputer) -> int:
-    accumulator = 0
-
-    # solve part 1
-
-    return accumulator
+def answer1(computer: ChronospatialComputer) -> str:
+    return ','.join(str(b) for b in computer.run_program())
 
 
 arg_parser = ArgumentParser('python -m 2024.17.main', description="Advent of Code 2024 Day 17")
