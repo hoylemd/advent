@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Callable
 
 from utils import logger, parse_input
 
@@ -14,6 +14,7 @@ class ChronospatialComputer:
         self.part = part
         self.register = [0, 0, 0] # A, B, C
         self.i_ptr = 0
+        self.step = 0
 
         self.program = self.parse_lines(lines)
 
@@ -94,29 +95,43 @@ class ChronospatialComputer:
         """opcode 0, division"""
         self.div_to_register(operand, C)
 
-    def step(self) -> None | int:
-        opcode, operand = self.program[self.i_ptr:self.i_ptr + 2]
+    def cur_inst(self) -> tuple[int, int]:
+        return (
+            self.program[self.i_ptr],
+            self.program[self.i_ptr + 1]
+        )
+
+    def cur_op(self) -> tuple[Callable, int]:
+        code, rand = self.cur_inst()
+        return (self.opcodes[code], rand)
+
+    def run_step(self) -> None | int:
+        op, operand = self.cur_op()
 
         i_ptr_mem = self.i_ptr
-        buff = self.opcodes[opcode](operand)
+        buff = op(operand)
 
         if self.i_ptr == i_ptr_mem:
             self.i_ptr += 2
 
         return buff
 
-    def run_program(self) -> list[int]:
+    def run_program(self, debug: bool=False) -> list[int]:
         self.i_ptr = 0
-        p_ctr = 0
+        self.step = 0
         buffer = []
 
         while self.i_ptr < len(self.program):
-            buff = self.step()
+            if debug:
+                logger.info(self.print_state())
+                breakpoint()
+
+            buff = self.run_step()
             if buff is not None:
                 buffer.append(buff)
 
-            p_ctr += 1
-            if p_ctr > 100_000:
+            self.step += 1
+            if self.step > 100_000:
                 raise ValueError("Program ran for > 100k cycles, probably in infinite loop")
 
         return buffer
@@ -124,13 +139,25 @@ class ChronospatialComputer:
     def find_initial_a_for_program(self) -> int:
         return 117440
 
+    def print_next_instruction(self) -> str:
+        op, operand = self.cur_op()
+        return f"    > {op.__name__}, {operand}"
+
+
+    def print_state(self) -> str:
+        return '\n'.join([
+            f"I_PTR={self.i_ptr}, REG: A={self.register[A]}, B={self.register[B]}, C={self.register[C]}",
+            self.print_next_instruction()
+        ])
+
+
 def find_initial_reg_a_val(computer: ChronospatialComputer) -> int:
 
     correct_a = computer.find_initial_a_for_program()
 
     computer.register[A] = correct_a
 
-    output = computer.run_program()
+    output = computer.run_program(debug=True)
     assert output == computer.program
 
     return correct_a
