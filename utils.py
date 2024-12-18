@@ -613,6 +613,11 @@ class CharGrid:
     def __str__(self):
         return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
 
+    def init_grid(self, height: int, width: int, value: Any=None) -> list[list[Any]]:
+        self.height = height
+        self.width = width
+        return self.add_layer(value)
+
     def parse_cell(self, y: int, x: int, c: str) -> str:
         """Parse a single cell, override this to add paring behaviour"""
         return c
