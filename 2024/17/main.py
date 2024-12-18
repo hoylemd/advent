@@ -8,11 +8,12 @@ A = 0
 B = 1
 C = 2
 
+
 class ChronospatialComputer:
 
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
-        self.register = [0, 0, 0] # A, B, C
+        self.register = [0, 0, 0]  # A, B, C
         self.i_ptr = 0
         self.step = 0
 
@@ -116,7 +117,7 @@ class ChronospatialComputer:
 
         return buff
 
-    def run_program(self, debug: bool=False) -> list[int]:
+    def run_program(self, debug: bool = False) -> list[int]:
         self.i_ptr = 0
         self.step = 0
         buffer = []
@@ -124,7 +125,7 @@ class ChronospatialComputer:
         while self.i_ptr < len(self.program):
             if debug:
                 logger.info(self.print_state())
-                breakpoint()
+                # breakpoint()
 
             buff = self.run_step()
             if buff is not None:
@@ -140,9 +141,15 @@ class ChronospatialComputer:
         return 117440
 
     def print_next_instruction(self) -> str:
-        op, operand = self.cur_op()
-        return f"    > {op.__name__}, {operand}"
-
+        opcode, operand = self.cur_inst()
+        if opcode == 3:
+            operand_annotation = 'X'
+        elif opcode in [1, 2] or operand < 4:
+            operand_annotation = 'L'
+        else:
+            operand_annotation = f"REG[{'ABC'[operand - 4]}]={self.register[operand - 4]}"
+        operand_repr = f"{operand}({operand_annotation})"
+        return f"    > {self.opcodes[opcode].__name__}, {operand_repr}"
 
     def print_state(self) -> str:
         return '\n'.join([
@@ -158,6 +165,7 @@ def find_initial_reg_a_val(computer: ChronospatialComputer) -> int:
     computer.register[A] = correct_a
 
     output = computer.run_program(debug=True)
+    logger.info(output)
     assert output == computer.program
 
     return correct_a
