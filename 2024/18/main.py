@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Iterable
 import os
 import itertools
 
@@ -7,13 +7,14 @@ from utils import logger, parse_input, CharGrid, coordinates, INFINITY, DIRECTIO
 
 class RamRun(CharGrid):
 
-    def __init__(self, lines: Iterator[str], height: int, width: int, block_limit: slice, part: int = 1):
+    def __init__(self, lines: Iterator[str], height: int, width: int, blocks_dropped: int, part: int = 1):
         self.part = part
+        self.blocks_dropped = blocks_dropped
 
         self.blocks = [line for line in self.parse_lines(lines)]
 
         def init_cell(y: int, x: int) -> str:
-            if (y, x) in (self.blocks[block_limit]):
+            if (y, x) in (self.blocks[:blocks_dropped]):
                 return '#'
             return '.'
 
@@ -40,6 +41,10 @@ class RamRun(CharGrid):
 
     def print_grid(self, *args, **kwargs) -> str:
         return super().esrap_lines(*args, **kwargs)
+
+    def print_grid_with_path(self, path: Iterable[coordinates], start: coordinates = (0, 0)):
+        path_notes = {start: 'S', **{pc: 'O' for pc in path}}
+        return self.print_grid(annotations = path_notes)
 
     def djikstra(self, start: coordinates, end: coordinates | None = None) -> list[list[int]]:
         """Hello djikstra my old friend
@@ -114,6 +119,9 @@ class RamRun(CharGrid):
                 for cy, cx in self.get_adjacent_coordinates(y, x, test=is_not_in_path_branch_or_unreachable)
             ], key=lambda ns: -1 * ns[0])
 
+            if not next_steps:
+                raise ValueError('No path exists')
+
             nd, y, x = next_steps.pop()
             # it 2nd shortest next step has same dist, add it to branches
             if next_steps and next_steps[-1][0] == nd:
@@ -126,35 +134,44 @@ class RamRun(CharGrid):
         return path, branches
 
 
-def answer2(ram: RamRun) -> int:
-    accumulator = 0
+def find_cutoff(ram: RamRun) -> tuple[int,int]:
+    path_list, _= ram.shortest_path((0, 0), (ram.height - 1, ram.width - 1))
+    path = set(path_list)
 
-    # solve part 2
+    while ram.blocks_dropped < len(ram.blocks):
+        y, x = ram.blocks[ram.blocks_dropped]
+        ram.lines[y][x] = '#'
+        ram.blocks_dropped += 1
 
-    return accumulator
+        if (y, x) in path:
+            try:
+                path_list, _ = ram.shortest_path((0, 0), (ram.height - 1, ram.width - 1))
+            except ValueError as exc:
+                return y, x
+
+            path = set(path_list)
+
+    raise Exception('Path never gets cut off?')
 
 
 def min_steps_to_exit(ram: RamRun) -> int:
-    accumulator = 0
-
     path, _= ram.shortest_path((0, 0), (ram.height -1, ram.width -1))
 
-    path_notes = {(0, 0): 'S', **{pc: 'O' for pc in path}}
-    logger.info(ram.print_grid(annotations=path_notes))
+    ram.print_grid_with_path(path)
     # solve part 1
 
     return len(path)
 
 PART_PARAMS = {
-    ('test.txt', 1): {
+    'test.txt': {
         'width': 7,
         'height': 7,
-        'block_limit': slice(None, 12)
+        'blocks_dropped': 12
     },
-    ('input.txt', 1): {
+    'input.txt': {
         'width': 71,
         'height': 71,
-        'block_limit': slice(None, 1024)
+        'blocks_dropped': 1024
     }
 }
 
@@ -165,7 +182,7 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    dimensions = PART_PARAMS[os.path.basename(argus.input_path), abs(argus.part)]
+    dimensions = PART_PARAMS[os.path.basename(argus.input_path)]
     lines = parse_input(argus.input_path)
     ram = RamRun(lines, **dimensions, part=argus.part)
     match argus.part:
@@ -174,7 +191,8 @@ if __name__ == '__main__':
         case 1:
             answer = min_steps_to_exit(ram)
         case 2:
-            answer = answer2(ram)
+            y, x = find_cutoff(ram)
+            answer = f"{x},{y}"
 
     logger.debug('')
 
