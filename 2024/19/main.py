@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
-from utils import logger, parse_input
 from typing import Iterator, Mapping
+from functools import cache
 
+from utils import logger, parse_input
 
 class LinenLayout:
 
@@ -9,25 +10,6 @@ class LinenLayout:
         self.part = part
 
         self.towels, self.designs = self.parse_lines(lines)
-
-        self.sorted_towels = sorted(self.towels, key = lambda t: -1* len(t))
-        self.towels_by_width = {}
-        self.towels_by_width = self.towel_width_map()
-        self.impossible_patterns = []
-
-    def towel_width_map(self) -> Mapping[int, list[str]]:
-        last_width = None
-        reversed_towels = list(reversed(self.sorted_towels))
-        width_map = {}
-        for i, towel in enumerate(reversed_towels):
-            if last_width is None:
-                last_width = len(towel)
-
-            if len(towel) > last_width:
-                width_map[last_width] = list(reversed(reversed_towels[:i]))
-                last_width = len(towel)
-
-        return width_map
 
 
     def __str__(self) -> str:
@@ -56,18 +38,17 @@ class LinenLayout:
             ''
         ] + self.designs)
 
+    @cache
     def validate_design(self, design: str) -> bool:
-        pass
-
-    def slow_validate_design(self, design: str) -> bool:
+        #logger.info(f"Validating design {design}")
         if len(design) == 0:
             return True
 
-        #logger.info(f"Validating design {design}")
         for towel in self.towels:
             if design.startswith(towel):
-                #logger.info(f"Can start with {towel}")
-                if self.validate_design(design[len(towel):]):
+                rest = design[len(towel):]
+                #logger.info(f"Can start with {towel}, rest: {rest}")
+                if self.validate_design(rest):
                     #logger.info(f"{design} is valid!")
                     return True
 
