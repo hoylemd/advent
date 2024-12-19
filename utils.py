@@ -2,6 +2,7 @@
 import os
 import logging
 from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable
+import itertools
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -712,6 +713,93 @@ class CharGrid:
         test: Callable[[int, int], bool] | None = None
     ) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
+
+    def djikstra(self, start: coordinates, end: coordinates | None = None) -> list[list[int]]:
+        """Hello djikstra my old friend
+        if end is provided, will stop when it finds an optimal route there
+        """
+        y, x = start
+        unvisited = set(itertools.product(range(self.height), range(self.width)))
+        nav_map = self.init_nav_map()
+        nav_map[y][x] = 0
+
+        def pop_shortest_unvisited() -> tuple[coordinates, int]:
+            sy, sx = -1, -1
+            shortest = INFINITY
+
+            for uy, ux in unvisited:
+                dist = nav_map[uy][ux]
+                if dist < shortest:
+                    sy, sx = uy, ux
+                    shortest = dist
+
+            if (sy, sx) == (-1, -1):
+                # no more reachable nodes
+                raise StopIteration
+
+            unvisited.remove((sy, sx))
+
+            return (sy, sx), shortest
+
+        def is_open_and_unvisited(y: int, x: int) -> bool:
+            return self.lines[y][x] != '#' and (y, x) in unvisited
+
+        while(len(unvisited)):
+            try:
+                (y, x), distance = pop_shortest_unvisited()
+            except StopIteration:
+                break
+
+            if distance == INFINITY:
+                raise ValueError("Shortest unvisited node is unreachable - that's impossible!")
+
+            if end is not None and (y, x) == end:
+                break
+
+            for cy, cx in self.get_adjacent_coordinates(y, x, test=is_open_and_unvisited):
+                cost_from_here = distance + 1
+
+                if cost_from_here < nav_map[cy][cx]:
+                    nav_map[cy][cx] = cost_from_here
+
+        return nav_map
+
+    def shortest_path(
+        self, start: coordinates, end: coordinates, branch: coordinates | None = None
+    ) -> tuple[list[coordinates],list[coordinates]]:
+        nav_map = self.djikstra(start, end)
+        path: list[coordinates] = []
+        branches: list[coordinates] = []
+
+        y, x = end
+
+        def is_not_in_path_branch_or_unreachable(y: int, x: int) -> bool:
+            return not(
+                (branch is not None and (y, x) == branch)
+                or (y, x) in path or nav_map[y][x] == INFINITY
+            )
+
+        while (y, x) != start:
+            path.append((y, x))
+
+            next_steps = sorted([
+                (nav_map[cy][cx], cy, cx)
+                for cy, cx in self.get_adjacent_coordinates(y, x, test=is_not_in_path_branch_or_unreachable)
+            ], key=lambda ns: -1 * ns[0])
+
+            if not next_steps:
+                raise ValueError('No path exists')
+
+            nd, y, x = next_steps.pop()
+            # it 2nd shortest next step has same dist, add it to branches
+            if next_steps and next_steps[-1][0] == nd:
+                branches.append((y, x))
+
+        assert (y, x) == start
+        assert nav_map[y][x] == 0
+
+        path.reverse()
+        return path, branches
 
 
 # N, clockwise
