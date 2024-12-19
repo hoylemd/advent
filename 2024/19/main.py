@@ -39,27 +39,39 @@ class LinenLayout:
         ] + self.designs)
 
     @cache
-    def validate_design(self, design: str) -> bool:
-        #logger.info(f"Validating design {design}")
+    def count_possible_arrangements(self, design: str) -> int:
+        # logger.info(f"counting for design {design}")
         if len(design) == 0:
-            return True
+            return 1
 
+        possible = 0
         for towel in self.towels:
             if design.startswith(towel):
                 rest = design[len(towel):]
-                #logger.info(f"Can start with {towel}, rest: {rest}")
-                if self.validate_design(rest):
-                    #logger.info(f"{design} is valid!")
-                    return True
+                # logger.info(f"Can start with {towel}, rest: {rest}")
+                possible += self.count_possible_arrangements(rest)
 
-        #logger.info(f"{design} is impossible")
-        return False
+        """
+        if possible:
+            logger.info(f"{design} is valid!")
+        else:
+            logger.info(f"{design} is impossible!)
+        """
 
+        return possible
 
-def answer2(towels: LinenLayout) -> int:
+def sum_possible_arrangements(towels: LinenLayout) -> int:
     accumulator = 0
 
-    # solve part 2
+    for i, design in enumerate(towels.designs):
+        logger.info(f"Validating {design} {i}/{len(towels.designs)}")
+        possible = towels.count_possible_arrangements(design)
+        if possible:
+            logger.info(f"  has {possible} possible arrangements")
+        else:
+            logger.info(f"  Impossible!")
+
+        accumulator += possible
 
     return accumulator
 
@@ -68,7 +80,7 @@ def count_valid_designs(towels: LinenLayout) -> int:
     accumulator = 0
     for i, design in enumerate(towels.designs):
         logger.info(f"Validating {design} {i}/{len(towels.designs)}")
-        if towels.validate_design(design):
+        if towels.count_possible_arrangements(design):
             logger.info("  valid")
             accumulator += 1
 
@@ -90,7 +102,7 @@ if __name__ == '__main__':
         case 1:
             answer = count_valid_designs(towels)
         case 2:
-            answer = answer2(towels)
+            answer = sum_possible_arrangements(towels)
 
     logger.debug('')
 
