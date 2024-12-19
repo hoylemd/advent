@@ -36,6 +36,22 @@ class LinenLayout:
             ''
         ] + self.designs)
 
+    def validate_design(self, design: str) -> bool:
+        if len(design) == 0:
+            return True
+
+        #logger.info(f"Validating design {design}")
+        for towel in self.towels:
+            if design.startswith(towel):
+                #logger.info(f"Can start with {towel}")
+                if self.validate_design(design[len(towel):]):
+                    #logger.info(f"{design} is valid!")
+                    return True
+
+        #logger.info(f"{design} is impossible")
+        return False
+
+
 def answer2(towels: LinenLayout) -> int:
     accumulator = 0
 
@@ -44,10 +60,13 @@ def answer2(towels: LinenLayout) -> int:
     return accumulator
 
 
-def answer1(towels: LinenLayout) -> int:
+def count_valid_designs(towels: LinenLayout) -> int:
     accumulator = 0
-
-    # solve part 1
+    for i, design in enumerate(towels.designs):
+        logger.info(f"Validating {design} {i}/{len(towels.designs)}")
+        if towels.validate_design(design):
+            logger.info("  valid")
+            accumulator += 1
 
     return accumulator
 
@@ -65,7 +84,7 @@ if __name__ == '__main__':
         case -1:
             answer = towels.esrap_lines()
         case 1:
-            answer = answer1(towels)
+            answer = count_valid_designs(towels)
         case 2:
             answer = answer2(towels)
 
