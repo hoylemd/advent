@@ -613,10 +613,34 @@ class CharGrid:
     def __str__(self):
         return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
 
-    def init_grid(self, height: int, width: int, value: Any=None) -> list[list[Any]]:
+    def add_layer(
+        self, init_value: Any=None,
+        value_fact: Callable[[int, int], Any] | None = None
+    ) -> list[list[Any]]:
+
+        if value_fact is None:
+            value_fact = lambda y, x: init_value
+
+        return [
+            [value_fact(y, x) for x in range(self.width)]
+            for y in range(self.height)
+        ]
+
+    def init_grid(
+        self, height: int, width: int,
+        init_value: Any=None,
+        value_fact: Callable[[int, int], Any] | None = None
+    ) -> list[list[Any]]:
         self.height = height
         self.width = width
-        return self.add_layer(value)
+
+        return self.add_layer(init_value=init_value, value_fact=value_fact)
+
+    def init_nav_map(self) -> list[list[int]]:
+        assert self.height != 0 and self.width != 0, "Cannot initialize nav map for dimensionless grid"
+
+        return self.add_layer(INFINITY)
+
 
     def parse_cell(self, y: int, x: int, c: str) -> str:
         """Parse a single cell, override this to add paring behaviour"""
@@ -688,9 +712,6 @@ class CharGrid:
         test: Callable[[int, int], bool] | None = None
     ) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
-
-    def add_layer(self, init_value: Any = None) -> list[list[Any]]:
-        return [([init_value] * self.width) for y in range(self.height)]
 
 
 # N, clockwise
