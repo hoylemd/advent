@@ -27,6 +27,29 @@ class Maze(CharGrid):
 
         return super().parse_cell(y, x, c)
 
+    def get_path(self) -> list[coordinates]:
+        assert self.start != (-1, -1)
+        assert self.end != (-1, -1)
+
+        prev = (-1, -1)
+
+        def is_not_prev_and_is_open(y: int, x: int) -> bool:
+            return not ((y, x) == prev or self.lines[y][x] == '#')
+
+        path = []
+        y, x = self.start
+
+        while (y, x) != self.end:
+            path.append((y, x))
+
+            adj = list(self.get_adjacent_coordinates(y, x, test=is_not_prev_and_is_open))
+            assert len(adj) == 1  # should only be one next step option
+
+            prev = (y, x)
+            y, x = adj[0]
+
+        return path
+
 
 type cheat = tuple[coordinates, coordinates]
 
@@ -55,8 +78,9 @@ def answer2(maze: Maze, **_: dict) -> int:
 
 
 def count_cheats(maze: Maze, min_save: int = 1) -> int:
-    original_path, branches = maze.shortest_path(maze.start, maze.end)
+    original_path = maze.get_path()
 
+    return len(original_path)
     good_cheats = {}
 
     for c in possible_cheats(maze, original_path):
