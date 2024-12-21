@@ -111,8 +111,8 @@ class ReindeerMaze(CharGrid):
                 self.get_adjacent_coordinates(y, x, test=is_reachable),
                 key=by_distance
             )
-            if (y, x) == (7, 5):
-                breakpoint()
+            #if (y, x) == (7, 5):
+            #    breakpoint()
 
             shortest = INFINITY
             for cy, cx in candidates:
