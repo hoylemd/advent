@@ -47,10 +47,10 @@ def {{p1_function}}({{obj}}: {{class}}, **_: dict) -> int:
     return accumulator
 
 
-PART_PARAMS = {
-    ('test.txt', 1): {
+INPUT_PARAMS = {
+    ('test.txt'): {
     },
-    ('input.txt', 1): {
+    ('input.txt'): {
     }
 }
 
@@ -62,7 +62,7 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    params = PART_PARAMS[os.path.basename(argus.input_path)]
+    params = INPUT_PARAMS[os.path.basename(argus.input_path)]
     {{doc_name}} = parse_input(argus.input_path)
     {{obj}} = {{class}}({{doc_name}}, part=argus.part)
     match argus.part:
