@@ -4,8 +4,6 @@ import logging
 from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable
 import itertools
 
-from custom_types import coordinates
-
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger(__name__)
@@ -599,6 +597,8 @@ class Grid:
 
 # region === New, Simpler grid classes (2024) ===
 
+type coordinates = tuple[int, int]  # always (y, x), NOT (x, y)
+
 
 class CharGrid:
     """A class for representing a grid of cells, each represented by a single char
@@ -684,10 +684,7 @@ class CharGrid:
         return None
 
     def get_transformed_coordinates(
-        self,
-        y: int,
-        x: int,
-        transforms: Iterable[coordinates],
+        self, y: int, x: int, transforms: Iterable[coordinates],
         test: Callable[[int, int], bool] | None = None
     ) -> Iterator[coordinates]:
         for dy, dx in transforms:
@@ -699,16 +696,16 @@ class CharGrid:
                     if test(*candidate):
                         yield candidate
 
-    def get_adjacent_coordinates(self,
-                                 y: int,
-                                 x: int,
-                                 test: Callable[[int, int], bool] | None = None) -> Iterator[coordinates]:
+    def get_adjacent_coordinates(
+        self, y: int, x: int,
+        test: Callable[[int, int], bool] | None = None
+    ) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, CARDINAL_DIRECTIONS, test=test)
 
-    def get_diagonal_coordinates(self,
-                                 y: int,
-                                 x: int,
-                                 test: Callable[[int, int], bool] | None = None) -> Iterator[coordinates]:
+    def get_diagonal_coordinates(
+        self, y: int, x: int,
+        test: Callable[[int, int], bool] | None = None
+    ) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
 
     def djikstra(self, start: coordinates, end: coordinates | None = None) -> list[list[int]]:
