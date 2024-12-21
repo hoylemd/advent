@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from typing import Iterator
 
@@ -30,7 +31,7 @@ class {{class}}:
         )
 
 
-def {{p2_function}}({{obj}}: {{class}}) -> int:
+def {{p2_function}}({{obj}}: {{class}}, **_: dict) -> int:
     accumulator = 0
 
     # solve part 2
@@ -38,12 +39,20 @@ def {{p2_function}}({{obj}}: {{class}}) -> int:
     return accumulator
 
 
-def {{p1_function}}({{obj}}: {{class}}) -> int:
+def {{p1_function}}({{obj}}: {{class}}, **_: dict) -> int:
     accumulator = 0
 
     # solve part 1
 
     return accumulator
+
+
+PART_PARAMS = {
+    ('test.txt', 1): {
+    },
+    ('input.txt', 1): {
+    }
+}
 
 
 arg_parser = ArgumentParser('python -m {{year}}.{{day}}.main', description="Advent of Code {{ year }} Day {{ day }}")
@@ -53,15 +62,16 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
+    params = PART_PARAMS[os.path.basename(argus.input_path)]
     {{doc_name}} = parse_input(argus.input_path)
     {{obj}} = {{class}}({{doc_name}}, part=argus.part)
     match argus.part:
         case -1:
             answer = {{obj}}.esrap_lines()
         case 1:
-            answer = {{p1_function}}({{obj}})
+            answer = {{p1_function}}({{obj}}, **params)
         case 2:
-            answer = {{p2_function}}({{obj}})
+            answer = {{p2_function}}({{obj}}, **params)
 
     logger.debug('')
 
