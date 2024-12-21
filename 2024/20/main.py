@@ -28,6 +28,24 @@ class Maze(CharGrid):
         return super().parse_cell(y, x, c)
 
 
+type cheat = tuple[coordinates, coordinates]
+
+
+def possible_cheats(maze: Maze, path: list[coordinates]) -> list[cheat]:
+    """Find every pair of points a, b in path such that:
+
+    - index(b) - index(a) > 1 (they aren't already adjacent)
+    - taxicab_distance(b, a) == 2 (they're only 2 tiles apart)
+    - the tile between them is a wall
+    """
+    pass
+
+
+def cheat_savings(original_path: list[coordinates], the_cheat: cheat) -> int:
+    """Count the # of tiles between the points in the cheat, add 1 (to accommodate for the hacked wall)"""
+    pass
+
+
 def answer2(maze: Maze, **_: dict) -> int:
     accumulator = 0
 
@@ -37,8 +55,17 @@ def answer2(maze: Maze, **_: dict) -> int:
 
 
 def count_cheats(maze: Maze, min_save: int = 1) -> int:
-    path, _ = maze.shortest_path(maze.start, maze.end)
-    return len(path)
+    original_path, branches = maze.shortest_path(maze.start, maze.end)
+
+    good_cheats = {}
+
+    for c in possible_cheats(maze, original_path):
+        savings = cheat_savings(original_path, c)
+
+        if savings > min_save:
+            good_cheats[c] = savings
+
+    return len(good_cheats)
 
 
 INPUT_PARAMS = {
