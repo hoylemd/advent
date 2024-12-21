@@ -4,6 +4,8 @@ import logging
 from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable
 import itertools
 
+from custom_types import coordinates
+
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger(__name__)
@@ -597,8 +599,6 @@ class Grid:
 
 # region === New, Simpler grid classes (2024) ===
 
-type coordinates = tuple[int, int]  # always (y, x), NOT (x, y)
-
 
 class CharGrid:
     """A class for representing a grid of cells, each represented by a single char
@@ -614,22 +614,20 @@ class CharGrid:
     def __str__(self):
         return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
 
-    def add_layer(
-        self, init_value: Any=None,
-        value_fact: Callable[[int, int], Any] | None = None
-    ) -> list[list[Any]]:
+    def add_layer(self, init_value: Any = None, value_fact: Callable[[int, int], Any] | None = None) -> list[list[Any]]:
 
-        if value_fact is None:
-            value_fact = lambda y, x: init_value
+        def get_val(y: int, x: int):
+            if value_fact is None:
+                return init_value
+            return value_fact(y, x)
 
-        return [
-            [value_fact(y, x) for x in range(self.width)]
-            for y in range(self.height)
-        ]
+        return [[get_val(y, x) for x in range(self.width)] for y in range(self.height)]
 
     def init_grid(
-        self, height: int, width: int,
-        init_value: Any=None,
+        self,
+        height: int,
+        width: int,
+        init_value: Any = None,
         value_fact: Callable[[int, int], Any] | None = None
     ) -> list[list[Any]]:
         self.height = height
@@ -641,7 +639,6 @@ class CharGrid:
         assert self.height != 0 and self.width != 0, "Cannot initialize nav map for dimensionless grid"
 
         return self.add_layer(INFINITY)
-
 
     def parse_cell(self, y: int, x: int, c: str) -> str:
         """Parse a single cell, override this to add paring behaviour"""
@@ -670,9 +667,7 @@ class CharGrid:
         return str(self.get(y, x))
 
     def esrap_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
-        return ''.join(
-            annotations.get((y, x), self.esrap_cell(y, x)) for x in range(self.width)
-        )
+        return ''.join(annotations.get((y, x), self.esrap_cell(y, x)) for x in range(self.width))
 
     def esrap_lines(self, annotations: Mapping[coordinates, str] = {}) -> str:
         return '\n'.join(self.esrap_line(y, annotations) for y in range(self.height))
@@ -689,7 +684,9 @@ class CharGrid:
         return None
 
     def get_transformed_coordinates(
-        self, y: int, x: int,
+        self,
+        y: int,
+        x: int,
         transforms: Iterable[coordinates],
         test: Callable[[int, int], bool] | None = None
     ) -> Iterator[coordinates]:
@@ -702,16 +699,16 @@ class CharGrid:
                     if test(*candidate):
                         yield candidate
 
-    def get_adjacent_coordinates(
-        self, y: int, x: int,
-        test: Callable[[int, int], bool] | None = None
-    ) -> Iterator[coordinates]:
+    def get_adjacent_coordinates(self,
+                                 y: int,
+                                 x: int,
+                                 test: Callable[[int, int], bool] | None = None) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, CARDINAL_DIRECTIONS, test=test)
 
-    def get_diagonal_coordinates(
-        self, y: int, x: int,
-        test: Callable[[int, int], bool] | None = None
-    ) -> Iterator[coordinates]:
+    def get_diagonal_coordinates(self,
+                                 y: int,
+                                 x: int,
+                                 test: Callable[[int, int], bool] | None = None) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
 
     def djikstra(self, start: coordinates, end: coordinates | None = None) -> list[list[int]]:
@@ -744,7 +741,7 @@ class CharGrid:
         def is_open_and_unvisited(y: int, x: int) -> bool:
             return self.lines[y][x] != '#' and (y, x) in unvisited
 
-        while(len(unvisited)):
+        while (len(unvisited)):
             try:
                 (y, x), distance = pop_shortest_unvisited()
             except StopIteration:
@@ -764,9 +761,10 @@ class CharGrid:
 
         return nav_map
 
-    def shortest_path(
-        self, start: coordinates, end: coordinates, branch: coordinates | None = None
-    ) -> tuple[list[coordinates],list[coordinates]]:
+    def shortest_path(self,
+                      start: coordinates,
+                      end: coordinates,
+                      branch: coordinates | None = None) -> tuple[list[coordinates], list[coordinates]]:
         nav_map = self.djikstra(start, end)
         path: list[coordinates] = []
         branches: list[coordinates] = []
@@ -774,18 +772,15 @@ class CharGrid:
         y, x = end
 
         def is_not_in_path_branch_or_unreachable(y: int, x: int) -> bool:
-            return not(
-                (branch is not None and (y, x) == branch)
-                or (y, x) in path or nav_map[y][x] == INFINITY
-            )
+            return not ((branch is not None and (y, x) == branch) or (y, x) in path or nav_map[y][x] == INFINITY)
 
         while (y, x) != start:
             path.append((y, x))
 
-            next_steps = sorted([
-                (nav_map[cy][cx], cy, cx)
-                for cy, cx in self.get_adjacent_coordinates(y, x, test=is_not_in_path_branch_or_unreachable)
-            ], key=lambda ns: -1 * ns[0])
+            ns_list = [(nav_map[cy][cx], cy, cx)
+                       for cy, cx in self.get_adjacent_coordinates(y, x, test=is_not_in_path_branch_or_unreachable)]
+
+            next_steps = sorted(ns_list, key=lambda ns: -1 * ns[0])
 
             if not next_steps:
                 raise ValueError('No path exists')
@@ -803,20 +798,10 @@ class CharGrid:
 
 
 # N, clockwise
-CARDINAL_DIRECTIONS = [
-    (-1, 0),
-    (0, 1),
-    (1, 0),
-    (0, -1)
-]
+CARDINAL_DIRECTIONS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
 # NW, clockwise
-DIAGONAL_DIRECTIONS = [
-    (-1, -1),
-    (-1, 1),
-    (1, 1),
-    (1, -1)
-]
+DIAGONAL_DIRECTIONS = [(-1, -1), (-1, 1), (1, 1), (1, -1)]
 
 DIRECTION_MAP = {
     'L': (0, -1),
@@ -832,7 +817,6 @@ DIRECTION_MAP = {
     'E': (0, 1),
     'S': (1, 0),
 }
-
 
 INFINITY = 999_999_999_999_999
 
@@ -940,6 +924,8 @@ def find_cycle(seq: list[int]):
 
 
 B64_REPS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+='
+
+
 def i_to_b64_chr(n: int) -> str:
     if n < 0 or n > 63:
         raise IndexError(f"Integer {n} can't be encoded to single-b64 char")
@@ -953,11 +939,10 @@ def b64_chr_to_i(s: str) -> int:
 
     i = B64_REPS.index(s[0])
 
-    if i <0:
+    if i < 0:
         raise ValueError(f"String '{s} is not a B64 char (0-9,A-Z,a-z,+,=)")
 
     return i
-
 
 
 # endregion
