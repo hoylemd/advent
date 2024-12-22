@@ -672,6 +672,9 @@ class CharGrid:
     def esrap_lines(self, annotations: Mapping[coordinates, str] = {}) -> str:
         return '\n'.join(self.esrap_line(y, annotations) for y in range(self.height))
 
+    def print_grid(self, *args, **kwargs) -> str:
+        return self.esrap_lines(*args, **kwargs)
+
     def is_out_of_bounds(self, pos: coordinates) -> bool:
         return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
 
