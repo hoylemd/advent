@@ -7,7 +7,7 @@ from utils import logger, parse_input, CharGrid, coordinates
 
 
 type path = list[coordinates]
-type cheat = tuple[coordinates, coordinates, coordinates]
+type cheat = tuple[coordinates, coordinates]
 
 
 class Maze(CharGrid):
@@ -58,7 +58,7 @@ class Maze(CharGrid):
     def print_cheat(self, path: path, cheat: cheat) -> str:
         annotations = {c: str(i) for i, c in enumerate(cheat)}
         skip_start = path.index(cheat[0])
-        skip_end = path.index(cheat[2])
+        skip_end = path.index(cheat[1])
 
         for skipped_step in path[skip_start + 1: skip_end]:
             annotations[skipped_step] = 'X'
@@ -70,7 +70,7 @@ def taxicab(a: coordinates, b: coordinates) -> int:
     return abs(b[0] - a[0]) + abs(b[1] - a[1])
 
 
-def possible_cheats(maze: Maze, path: path) -> Iterator[tuple[cheat, int]]:
+def possible_cheats(maze: Maze, path: path, max_cheat: int = 2) -> Iterator[tuple[cheat, int]]:
     """Find every pair of points a, b in path such that:
 
     - index(b) - index(a) > 1 (they aren't already adjacent)
@@ -79,32 +79,22 @@ def possible_cheats(maze: Maze, path: path) -> Iterator[tuple[cheat, int]]:
     """
     for i, (y, x) in enumerate(path):
         for j, (ny, nx) in enumerate(path[i:]):
-            if taxicab((y, x), (ny, nx)) == 2:
+            cheat_dist = taxicab((y, x), (ny, nx))
+            if cheat_dist <= max_cheat and cheat_dist < j:
                 # logger.info(f"possible cheat between {y, x} and {ny, nx}")
-                mid_y = y + ((ny - y) // 2)
-                mid_x = x + ((nx - x) // 2)
-                if maze.lines[mid_y][mid_x] == '#':
-                    savings = j - 2
-                    # logger.info(f"adding cheat: {y, x}, -> {ny, nx}: ({savings})")
-                    yield (((y, x), (mid_y, mid_x), (ny, nx)), (savings))
+                savings = j - cheat_dist
+                # logger.info(f"adding cheat: {y, x}, -> {ny, nx}: ({savings})")
+                yield (((y, x), (ny, nx)), (savings))
 
 
-def answer2(maze: Maze, **_: dict) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
-
-
-def count_cheats(maze: Maze, min_save: int = 1) -> int:
+def count_cheats(maze: Maze, min_save: int = 1, cheat_time: int = 2) -> int:
     original_path = maze.get_path() + [maze.end]
 
     # return len(original_path)
     good_cheats = {}
     cheats_by_saves = defaultdict(list)
 
-    for cheat, savings in possible_cheats(maze, original_path):
+    for cheat, savings in possible_cheats(maze, original_path, cheat_time):
         if savings > min_save:
             # logger.info(maze.print_cheat(original_path, cheat))
             # logger.info(f"cheat {cheat} saves {savings} picoseconds")
@@ -118,9 +108,17 @@ def count_cheats(maze: Maze, min_save: int = 1) -> int:
 
 
 INPUT_PARAMS = {
-    ('test.txt'): {},
-    ('input.txt'): {
+    ('test.txt', 1): {},
+    ('input.txt', 1): {
         'min_save': 99
+    },
+    ('test.txt', 2): {
+        'min_save': 49,
+        'cheat_time': 20,
+    },
+    ('input.txt', 2): {
+        'min_save': 99,
+        'cheat_time': 20
     }
 }
 
@@ -131,16 +129,14 @@ arg_parser.add_argument('part', type=int, default=1, help="Which part of the cha
 if __name__ == '__main__':
     argus = arg_parser.parse_args()
 
-    params = INPUT_PARAMS[os.path.basename(argus.input_path)]
     lines = parse_input(argus.input_path)
     maze = Maze(lines, part=argus.part)
     match argus.part:
         case -1:
             answer = maze.esrap_lines()
-        case 1:
+        case _:
+            params = INPUT_PARAMS[os.path.basename(argus.input_path), argus.part]
             answer = count_cheats(maze, **params)
-        case 2:
-            answer = answer2(maze, **params)
 
     logger.debug('')
 
