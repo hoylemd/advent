@@ -6,6 +6,10 @@ from collections import defaultdict
 from utils import logger, parse_input, CharGrid, coordinates
 
 
+type path = list[coordinates]
+type cheat = tuple[coordinates, coordinates, coordinates]
+
+
 class Maze(CharGrid):
 
     def __init__(self, lines: Iterator[str], part: int = 1):
@@ -28,7 +32,7 @@ class Maze(CharGrid):
 
         return super().parse_cell(y, x, c)
 
-    def get_path(self) -> list[coordinates]:
+    def get_path(self) -> path:
         assert self.start != (-1, -1)
         assert self.end != (-1, -1)
 
@@ -51,15 +55,22 @@ class Maze(CharGrid):
 
         return path
 
+    def print_cheat(self, path: path, cheat: cheat) -> str:
+        annotations = {c: str(i) for i, c in enumerate(cheat)}
+        skip_start = path.index(cheat[0])
+        skip_end = path.index(cheat[2])
 
-type cheat = tuple[coordinates, coordinates]
+        for skipped_step in path[skip_start + 1: skip_end]:
+            annotations[skipped_step] = 'X'
+
+        return self.print_grid(annotations=annotations)
 
 
 def taxicab(a: coordinates, b: coordinates) -> int:
     return abs(b[0] - a[0]) + abs(b[1] - a[1])
 
 
-def possible_cheats(maze: Maze, path: list[coordinates]) -> Iterator[tuple[cheat, int]]:
+def possible_cheats(maze: Maze, path: path) -> Iterator[tuple[cheat, int]]:
     """Find every pair of points a, b in path such that:
 
     - index(b) - index(a) > 1 (they aren't already adjacent)
@@ -69,12 +80,13 @@ def possible_cheats(maze: Maze, path: list[coordinates]) -> Iterator[tuple[cheat
     for i, (y, x) in enumerate(path):
         for j, (ny, nx) in enumerate(path[i:]):
             if taxicab((y, x), (ny, nx)) == 2:
-                logger.info(f"possible cheat between {y, x} and {ny, nx}")
+                # logger.info(f"possible cheat between {y, x} and {ny, nx}")
                 mid_y = y + ((ny - y) // 2)
                 mid_x = x + ((nx - x) // 2)
                 if maze.lines[mid_y][mid_x] == '#':
-                    logger.info(f"adding cheat: {mid_y, mid_x}, {ny, nx}: ({j + 2})")
-                    yield (((mid_y, mid_x), (ny, nx)), (j + 2))
+                    savings = j - 2
+                    # logger.info(f"adding cheat: {y, x}, -> {ny, nx}: ({savings})")
+                    yield (((y, x), (mid_y, mid_x), (ny, nx)), (savings))
 
 
 def answer2(maze: Maze, **_: dict) -> int:
@@ -86,7 +98,7 @@ def answer2(maze: Maze, **_: dict) -> int:
 
 
 def count_cheats(maze: Maze, min_save: int = 1) -> int:
-    original_path = maze.get_path()
+    original_path = maze.get_path() + [maze.end]
 
     # return len(original_path)
     good_cheats = {}
@@ -94,10 +106,12 @@ def count_cheats(maze: Maze, min_save: int = 1) -> int:
 
     for cheat, savings in possible_cheats(maze, original_path):
         if savings > min_save:
+            # logger.info(maze.print_cheat(original_path, cheat))
+            # logger.info(f"cheat {cheat} saves {savings} picoseconds")
             cheats_by_saves[savings].append(cheat)
             good_cheats[cheat] = savings
 
-    for save, cheats in cheats_by_saves.items():
+    for save, cheats in sorted(cheats_by_saves.items(), key=lambda x: x[0]):
         logger.info(f"There are {len(cheats)} cheats thate save {save} picoseconds")
 
     return len(good_cheats)
