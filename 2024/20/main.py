@@ -1,6 +1,7 @@
 import os
 from argparse import ArgumentParser
 from typing import Iterator
+from collections import defaultdict
 
 from utils import logger, parse_input, CharGrid, coordinates
 
@@ -54,19 +55,26 @@ class Maze(CharGrid):
 type cheat = tuple[coordinates, coordinates]
 
 
-def possible_cheats(maze: Maze, path: list[coordinates]) -> list[cheat]:
+def taxicab(a: coordinates, b: coordinates) -> int:
+    return abs(b[0] - a[0]) + abs(b[1] - a[1])
+
+
+def possible_cheats(maze: Maze, path: list[coordinates]) -> Iterator[tuple[cheat, int]]:
     """Find every pair of points a, b in path such that:
 
     - index(b) - index(a) > 1 (they aren't already adjacent)
     - taxicab_distance(b, a) == 2 (they're only 2 tiles apart)
     - the tile between them is a wall
     """
-    pass
-
-
-def cheat_savings(original_path: list[coordinates], the_cheat: cheat) -> int:
-    """Count the # of tiles between the points in the cheat, add 1 (to accommodate for the hacked wall)"""
-    pass
+    for i, (y, x) in enumerate(path):
+        for j, (ny, nx) in enumerate(path[i:]):
+            if taxicab((y, x), (ny, nx)) == 2:
+                logger.info(f"possible cheat between {y, x} and {ny, nx}")
+                mid_y = y + ((ny - y) // 2)
+                mid_x = x + ((nx - x) // 2)
+                if maze.lines[mid_y][mid_x] == '#':
+                    logger.info(f"adding cheat: {mid_y, mid_x}, {ny, nx}: ({j + 2})")
+                    yield (((mid_y, mid_x), (ny, nx)), (j + 2))
 
 
 def answer2(maze: Maze, **_: dict) -> int:
@@ -80,14 +88,17 @@ def answer2(maze: Maze, **_: dict) -> int:
 def count_cheats(maze: Maze, min_save: int = 1) -> int:
     original_path = maze.get_path()
 
-    return len(original_path)
+    # return len(original_path)
     good_cheats = {}
+    cheats_by_saves = defaultdict(list)
 
-    for c in possible_cheats(maze, original_path):
-        savings = cheat_savings(original_path, c)
-
+    for cheat, savings in possible_cheats(maze, original_path):
         if savings > min_save:
-            good_cheats[c] = savings
+            cheats_by_saves[savings].append(cheat)
+            good_cheats[cheat] = savings
+
+    for save, cheats in cheats_by_saves.items():
+        logger.info(f"There are {len(cheats)} cheats thate save {save} picoseconds")
 
     return len(good_cheats)
 
