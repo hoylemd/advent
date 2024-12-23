@@ -6,6 +6,15 @@ day=$1
 shift
 template='main.mustache'
 
+if command -v mustache > /dev/null; then
+    templater='mustache'
+elif command -v chevron > /dev/null; then
+    templater='chevron'
+else
+    echo "No templater (mustache or chevron) installed!"
+    exit 1
+fi
+
 if [[ -z "$year" ]]; then
     echo "need a year"
     exit 1
@@ -52,7 +61,11 @@ echo "$json_data" > temp_data.json
 
 mkdir -p "$year/$day"
 
-mustache temp_data.json $template > "$year/$day/main.py"
+if [[ "$templater" = 'mustache' ]]; then
+    $templater temp_data.json $template > "$year/$day/main.py"
+elif [[ "$templater" = 'chevron' ]]; then
+    $templater -d temp_data.json $template > "$year/$day/main.py"
+fi
 touch "$year/$day/test.txt"
 touch "$year/$day/test2.txt"
 touch "$year/$day/input.txt"
@@ -69,4 +82,8 @@ rm temp_data.json
 
 echo "Advent $year day $day ready"
 
-code "$year/$day/main.py"
+if command -v code > /dev/null; then
+    code "$year/$day/main.py"
+else
+    echo "$year/$day/main.py ready for editing"
+fi
