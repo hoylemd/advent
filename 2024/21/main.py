@@ -11,7 +11,7 @@ def disp_to_moves(y: int, x: int) -> str:
     y_move = 'v' if y > 0 else '^'
     x_move = '>' if x > 0 else '<'
 
-    return f"{y_move * y_mag}{x_move * x_mag}"
+    return f"{x_move * x_mag}{y_move * y_mag}"
 
 
 class KeypadRobot:
@@ -124,14 +124,6 @@ class Keypad:
 
     def complexity(self, sequence: str) -> int:
         return len(sequence) * int(self.code[:-1])
-
-
-def answer2(keypads: list[Keypad], **_: dict) -> int:
-    accumulator = 0
-
-    # solve part 2
-
-    return accumulator
 
 
 def sum_complexities(keypads: list[Keypad], **_: dict) -> int:
