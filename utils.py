@@ -1,7 +1,7 @@
 """General-purpose helper modules"""
 import os
 import logging
-from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable
+from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable, Self
 import itertools
 
 # region === logging ===
@@ -116,8 +116,6 @@ def render_grid(grid, shader=str):
     :returns str: The rendered grid
     """
     return '\n'.join(render_lines(grid, shader))
-
-
 # endregion
 
 
@@ -598,6 +596,8 @@ class Grid:
 # region === New, Simpler grid classes (2024) ===
 
 type coordinates = tuple[int, int]  # always (y, x), NOT (x, y)
+type annotations = Mapping[coordinates, str]
+type cell_shader = Callable[[coordinates, Any], str]
 
 
 class CharGrid:
@@ -605,11 +605,15 @@ class CharGrid:
         Assumes it's a rectangular grid, but it need not be square
     """
 
-    def __init__(self, lines: Iterable[str]):
+    @classmethod
+    def from_dims(cls, height: int, width: int, default_value: str = '.') -> Self:
+        return cls(default_value * width for i in range(height))
+
+    def __init__(self, lines: Iterable[Any]):
         self.height = 0
         self.width = 0
 
-        self.lines = list(self.parse_lines(lines))
+        self.lines = list(list(line) for line in self.parse_lines(lines))
 
     def __str__(self):
         return f"{self.__class__.__name__}(CharGrid): ({self.width},{self.height})"
@@ -640,15 +644,15 @@ class CharGrid:
 
         return self.add_layer(INFINITY)
 
-    def parse_cell(self, y: int, x: int, c: str) -> str:
+    def parse_cell(self, y: int, x: int, c: Any) -> Any:
         """Parse a single cell, override this to add paring behaviour"""
         return c
 
-    def parse_line(self, y: int, line: str) -> str:
+    def parse_line(self, y: int, line: Iterable[Any]) -> Iterable[Any]:
         """Parse a line, checking each char individually"""
-        return ''.join(self.parse_cell(y, x, c) for x, c in enumerate(line))
+        return (self.parse_cell(y, x, val) for x, val in enumerate(line))
 
-    def parse_lines(self, lines: Iterable[str]) -> Iterable[str]:
+    def parse_lines(self, lines: Iterable[Any]) -> Iterable[Any]:
         """Feed in the lines from input, parse each one, and emit the lines
 
         Add any additional parsing logic here (i.e. parsing out positions of things)
@@ -666,14 +670,77 @@ class CharGrid:
     def esrap_cell(self, y: int, x: int) -> str:
         return str(self.get(y, x))
 
-    def esrap_line(self, y: int, annotations: Mapping[coordinates, str] = {}) -> str:
+    def esrap_line(self, y: int, annotations: annotations = {}) -> str:
         return ''.join(annotations.get((y, x), self.esrap_cell(y, x)) for x in range(self.width))
 
-    def esrap_lines(self, annotations: Mapping[coordinates, str] = {}) -> str:
+    def esrap_lines(self, annotations: annotations = {}) -> str:
         return '\n'.join(self.esrap_line(y, annotations) for y in range(self.height))
 
     def print_grid(self, *args, **kwargs) -> str:
         return self.esrap_lines(*args, **kwargs)
+
+    def render_cell(
+        self,
+        y: int,
+        x: int,
+        annotations: annotations = {},
+        shader: cell_shader | None = None
+    ) -> str:
+        value = annotations.get((y, x), self.get(y, x))
+
+        if shader is not None:
+            return shader((y, x), value)
+        return str(value)
+
+
+    def render_line(
+        self,
+        y: int,
+        annotations: annotations = {},
+        shader: cell_shader | None = None
+    ) -> list[str]:
+        return [
+            self.render_cell(y, x, annotations=annotations, shader=shader)
+            for x in range(self.width)
+        ]
+
+    def render_grid(
+        self,
+        column_delimiter: str = '',
+        row_delimiter: str = '',
+        annotations: annotations = {},
+        shader: cell_shader | None = None
+    ) -> str:
+        cells = [
+            self.render_line(y, annotations=annotations, shader=shader)
+            for y in range(self.height)
+        ]
+
+        # measure cells
+        cell_width = 0
+        # cell_height = 1  # TODO: support cells w/ height
+
+        for line in cells:
+            for cell in line:
+                if len(cell) > cell_width:
+                    cell_width = len(cell)
+
+        row_border = '\n'
+        if row_delimiter:
+            corner_char = row_delimiter[-1]
+            border_chars = row_delimiter[:-1]
+            border_tiles = cell_width // len(border_chars)
+            cell_border = border_chars * border_tiles
+            if (extra_border_chars := cell_width - len(cell_border)):
+                cell_border += border_chars[:extra_border_chars]
+
+            row_border = f"\n{corner_char.join(cell_border for _ in range(self.width))}\n"
+
+        return row_border.join(
+            column_delimiter.join(
+                f"{cell:^{cell_width}}" for cell in line
+            ) for line in cells
+        )
 
     def is_out_of_bounds(self, pos: coordinates) -> bool:
         return pos[0] < 0 or pos[1] < 0 or pos[0] >= self.height or pos[1] >= self.width
@@ -717,6 +784,7 @@ class CharGrid:
         """
         y, x = start
         unvisited = set(itertools.product(range(self.height), range(self.width)))
+
         nav_map = self.init_nav_map()
         nav_map[y][x] = 0
 
