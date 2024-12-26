@@ -4,4 +4,4 @@ test2.txt 1 11048
 input.txt 1 -
 test.txt 2 45
 test2.txt 2 64
-input.txt 2 -
+input.txt 2 576 high

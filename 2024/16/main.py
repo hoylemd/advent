@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from typing import Iterator
 import itertools
 
-from utils import logger, parse_input, CharGrid, coordinates, CARDINAL_DIRECTIONS, INFINITY, DIRECTION_MAP
+from utils import logger, parse_input, CharGrid, coordinates, INFINITY, DIRECTION_MAP
 
 
 class ReindeerMaze(CharGrid):
@@ -46,7 +46,6 @@ class ReindeerMaze(CharGrid):
 
         return (sy, sx), shortest, s_dir
 
-
     def djikstra(self) -> int:
         """Hello djikstra my old friend"""
         y, x = -1, -1
@@ -54,88 +53,114 @@ class ReindeerMaze(CharGrid):
         def is_open_and_unvisited(y: int, x: int) -> bool:
             return self.lines[y][x] != '#' and (y, x) in self.unvisited
 
-        while(len(self.unvisited)): # technically should also check for all-infinity, but that wont happen
+        while (len(self.unvisited)):  # technically should also check for all-infinity, but that wont happen
             try:
                 (y, x), distance, (hy, hx) = self.pop_shortest_unvisited()
             except StopIteration:
                 break
-            #logger.info(f"At {y, x}, current distance is {distance}, heading {hy, hx}")
+            # logger.info(f"At {y, x}, current distance is {distance}, heading {hy, hx}")
 
             if distance == INFINITY:
                 # shortest unvisited is unreachable what
                 breakpoint()
 
             if (y, x) == self.end and self.part == 1:
-                return distance # shortest path found! (probably)
+                return distance  # shortest path found! (probably)
 
             for cy, cx in self.get_adjacent_coordinates(y, x, test=is_open_and_unvisited):
                 cost_from_here = distance + 1
                 if (cy, cx) != (y + hy, x + hx):
                     cost_from_here += 1000
 
-                #logger.info(f"checking {cy, cx}: {cost_from_here}")
+                # logger.info(f"checking {cy, cx}: {cost_from_here}")
 
+                if (y, x) in [(7, 4), (7, 5), (8, 5)]:
+                    breakpoint()
                 if cost_from_here < self.nav_map[cy][cx][0]:
-                    #logger.info(f"  shorter than {self.nav_map[cy][cx][0]}")
+                    if self.nav_map[cy][cx][0] != INFINITY:
+                        logger.info(f" {cy, cx}: {cost_from_here} shorter than {self.nav_map[cy][cx][0]}")
                     self.nav_map[cy][cx] = (cost_from_here, (cy - y, cx - x))
-
 
         return distance
 
     def count_best_paths(self) -> int:
         best_path_tiles = set()
 
+        logger.info('building nav map')
         self.djikstra()
+        breakpoint()
+        logger.info('done nav map')
 
         def is_reachable(y: int, x: int) -> bool:
             return self.nav_map[y][x][0] < INFINITY
 
-        def by_distance(coords) -> int:
-            y, x = coords
-            return self.nav_map[y][x][0]
+        end_cost = self.nav_map[self.end[0]][self.end[1]][0]
+
+        def is_valid_best_path(candidate: coordinates, at: coordinates) -> bool:
+            y, x = at
+            c_y, c_x = candidate
+
+            cost, heading = self.nav_map[y][x]
+            c_cost, c_heading = self.nav_map[c_y][c_x]
+            if c_cost > end_cost:
+                return False
+            delta = cost - c_cost
+            logger.info("cand: %d,%d, cost %s, heading %s, delta %d", c_y, c_x, c_cost, c_heading, delta)
+            if heading == c_heading:
+                return delta == 1
+            return delta in [1001, -999]
 
         # backtrack from end?
         to_check = [self.end]
 
-
+        STOP_COORDS = [(12, 13), (7, 5), (1, 15)]
         while len(to_check):
             y, x = to_check.pop()
+            logger.info('checking %s, %d left', (y, x), len(to_check))
 
             best_path_tiles.add((y, x))
-            logger.info(self.esrap_lines({tile: 'O' for tile in best_path_tiles}))
 
+            """
             if (y, x) == self.start:
                 break
+            """
+            cost, heading = self.nav_map[y][x]
+            logger.info("  at: %d,%d, cost %s, heading %s", y, x, cost, heading)
 
-            candidates = sorted(
-                self.get_adjacent_coordinates(y, x, test=is_reachable),
-                key=by_distance
-            )
-            #if (y, x) == (7, 5):
-            #    breakpoint()
+            candidates = [
+                candidate for candidate in self.get_adjacent_coordinates(y, x, test=is_reachable)
+                if is_valid_best_path(candidate, (y, x))
+            ]
 
-            shortest = INFINITY
+            annotations = {tile: 'O' for tile in best_path_tiles}
+            for i, (cy, cx) in enumerate(candidates):
+                annotations[(cy, cx)] = f"{i}"
+            logger.info('%s', self.esrap_lines(annotations))
+
+            if (y, x) in STOP_COORDS:
+                breakpoint()
+
             for cy, cx in candidates:
+                """
                 dist = self.nav_map[cy][cx][0]
                 if dist < shortest:
                     shortest = dist
                 if dist > shortest:
                     break
+                """
 
                 to_check.append((cy, cx))
-
 
         return len(best_path_tiles)
 
 
+# region === part 2 solution cribbed from reddit ===
 
 
-def answer2(maze: ReindeerMaze) -> int:
-    accumulator = 0
 
-    # solve part 2
 
-    return accumulator
+# endregion
+
 
 
 arg_parser = ArgumentParser('python -m 2024.16.main', description="Advent of Code 2024 Day 16")
