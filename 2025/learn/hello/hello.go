@@ -1,9 +1,21 @@
 package main
 
-import "fmt"
-
-import "greetings"
+import (
+	"fmt"
+	"greetings"
+	"log"
+)
 
 func main() {
-	fmt.Println(greetings.Hello("ya dungus"))
+	log.SetPrefix("greetings: ")
+	log.SetFlags(0)
+
+	//message, err := greetings.Hello("")
+	message, err := greetings.Hello("ya dingus")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(message)
 }
