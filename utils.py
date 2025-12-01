@@ -3,6 +3,7 @@ import os
 import logging
 from typing import Iterator, Generator, Callable, Optional, Any, Mapping, Iterable, Self
 import itertools
+from heapq import heappop, heappush, heapify
 
 # region === logging ===
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -20,7 +21,7 @@ def _read_file(path: str) -> Generator[str, None, None]:
     """Just emit lines from a file path
 
     :param str path: Path to the file to read from
-    :yields str: Lines from the file (WITH trailing newline)
+    :yields str: Lines from the le (WITH trailing newline)
     """
     with open(path) as fp:
         for line in fp.readlines():
@@ -595,9 +596,14 @@ class Grid:
 
 # region === New, Simpler grid classes (2024) ===
 
+
 type coordinates = tuple[int, int]  # always (y, x), NOT (x, y)
 type annotations = Mapping[coordinates, str]
 type cell_shader = Callable[[coordinates, Any], str]
+
+
+def taxicab_distance(p1: coordinates, p2: coordinates) -> int:
+    return abs(p2[0] - p1[0]) + abs(p2[1] - p1[1])
 
 
 class CharGrid:
@@ -692,7 +698,6 @@ class CharGrid:
             return shader((y, x), value)
         return str(value)
 
-
     def render_line(
         self,
         y: int,
@@ -778,22 +783,45 @@ class CharGrid:
     ) -> Iterator[coordinates]:
         return self.get_transformed_coordinates(y, x, DIAGONAL_DIRECTIONS, test=test)
 
-    def djikstra(self, start: coordinates, end: coordinates | None = None) -> list[list[int]]:
+    def djikstra(
+        self,
+        start: coordinates,
+        end: coordinates | None = None,
+        get_cost: Callable[[coordinates, coordinates], int] | None = None,
+        set_cost: Callable[[coordinates, coordinates, int], int] | None = None
+    ) -> list[list[int]]:
         """Hello djikstra my old friend
         if end is provided, will stop when it finds an optimal route there
+
+        returns a raw grid where each cell is distance from start
         """
+
+        def set_cost_noop(curr: coordinates, cand: coordinates, cost: int) -> int:
+            return cost
+
+        if get_cost is None:
+            cost = taxicab_distance
+
+        if set_cost is None:
+            set_cost = set_cost_noop
+
+        assert get_cost is not None
+        assert set_cost is not None
+
         y, x = start
         unvisited = set(itertools.product(range(self.height), range(self.width)))
+        unvisited_costs: Mapping[coordinates, int] = {}
 
         nav_map = self.init_nav_map()
         nav_map[y][x] = 0
+        unvisited_costs[y, x] = 0
 
         def pop_shortest_unvisited() -> tuple[coordinates, int]:
             sy, sx = -1, -1
             shortest = INFINITY
 
             for uy, ux in unvisited:
-                dist = nav_map[uy][ux]
+                dist = unvisited_costs.get((uy, ux), INFINITY)  # nav_map[uy][ux]
                 if dist < shortest:
                     sy, sx = uy, ux
                     shortest = dist
@@ -811,21 +839,24 @@ class CharGrid:
 
         while (len(unvisited)):
             try:
-                (y, x), distance = pop_shortest_unvisited()
+                (y, x), cost = pop_shortest_unvisited()
             except StopIteration:
                 break
 
-            if distance == INFINITY:
+            if cost == INFINITY:
                 raise ValueError("Shortest unvisited node is unreachable - that's impossible!")
 
             if end is not None and (y, x) == end:
                 break
 
             for cy, cx in self.get_adjacent_coordinates(y, x, test=is_open_and_unvisited):
-                cost_from_here = distance + 1
+                # logger.info(f"{cy, cx}")
+                cost_from_here = cost + get_cost((y, x), (cy, cx))
 
-                if cost_from_here < nav_map[cy][cx]:
-                    nav_map[cy][cx] = cost_from_here
+                if cost_from_here < (unvisited_costs.get((cy, cx)) or INFINITY):
+                    unvisited_costs[cy, cx] = set_cost((y, x), (cy, cx), cost_from_here)
+
+            nav_map[y][x] = cost
 
         return nav_map
 
