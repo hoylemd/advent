@@ -5,9 +5,9 @@ from typing import Iterator
 from utils import logger, parse_input
 
 
-def parse_range(range: str) -> tuple[int, int]:
+def parse_range(range: str) -> tuple[str, str]:
     parts = range.split('-')
-    return (int(parts[0]), int(parts[1]))
+    return (parts[0], parts[1])
 
 
 def parse_ranges(line, part=1):
@@ -15,7 +15,7 @@ def parse_ranges(line, part=1):
     return (parse_range(spec) for spec in range_specs)
 
 
-def esrap_range(range: tuple[int, int]) -> str:
+def esrap_range(range: tuple[str, str]) -> str:
     return f"{range[0]}-{range[1]}"
 
 
@@ -23,33 +23,63 @@ def esrap_ranges(ranges):
     return ','.join(esrap_range(range) for range in ranges)
 
 
-class Thing:
+def get_ticker(id_sample: str) -> int:
+    assert len(id_sample) % 2 == 0, "Cannot get ticker for odd-length number"
+    half = len(id_sample) // 2
 
-    def __init__(self, lines: Iterator[str], part: int = 1):
-        self.part = part
-
-        self.elements = [line for line in self.parse_lines(lines)]
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}(part {self.part})"
-
-    def parse_line(self, y: int, line: str) -> str:
-        return line
-
-    def parse_lines(self, lines: Iterator[str]) -> Iterator:
-        for y, line in enumerate(lines):
-            yield self.parse_line(y, line)
-
-    def esrap_line(self, y: int, element: str) -> str:
-        return f"{element}"
-
-    def esrap_lines(self) -> str:
-        return '\n'.join(
-            self.esrap_line(y, e) for y, e in enumerate(self.elements)
-        )
+    return int(f"1{'0' * (half - 1)}1")
 
 
-def answer2(ranges: Iterator[tuple[int, int]], **_: dict) -> int:
+def is_repeat(number: str):
+    if len(number) % 2:
+        return False  # even = cant be repeat
+
+    first_half = number[:len(number) // 2]
+
+    return first_half * 2 == number
+
+
+def adjust_range(first: str, last: str) -> tuple[str, str]:
+    lower_bound = first
+    if len(first) % 2:
+        part_len = len(first) // 2
+        # it's odd, so round up to first repeat of length
+        lower_bound = f"1{'0' * part_len}" * 2
+
+    assert len(lower_bound) % 2 == 0, "Lower bound is not even after adjustment?"
+
+    # adjust lbound to next repeat
+    first_half = lower_bound[:len(lower_bound) // 2]
+    lower_bound = first_half * 2
+
+    assert is_repeat(lower_bound), "Lower bound is not a repeat after adjustment?"
+
+    upper_bound = last
+    if len(last) % 2:
+        part_len = len(last) // 2
+        # it's odd so round down to last repeat of length
+        upper_bound = f"{'9' * part_len}" * 2
+
+    assert len(upper_bound) % 2 == 0, "Upper bound is not even after adjustment?"
+
+    return lower_bound, upper_bound
+
+
+def get_invalid_ids(first: str, last: str) -> list[int]:
+    invalids = []
+
+    lbound, ubound = adjust_range(first, last)
+    ticker = get_ticker(lbound)
+
+    if len(lbound) > len(ubound):
+        return []  # whole range must be valid
+
+    logger.debug(f"{first, last} -> {lbound}, {ubound}: {ticker=}")
+
+    return invalids
+
+
+def answer2(ranges: Iterator[tuple[str, str]], **_: dict) -> int:
     accumulator = 0
 
     # solve part 2
@@ -57,10 +87,15 @@ def answer2(ranges: Iterator[tuple[int, int]], **_: dict) -> int:
     return accumulator
 
 
-def answer1(ranges: Iterator[tuple[int, int]], **_: dict) -> int:
+def answer1(ranges: Iterator[tuple[str, str]], **_: dict) -> int:
     accumulator = 0
 
     # solve part 1
+    for range in ranges:
+        invalid_ids = get_invalid_ids(*range)
+        logger.info(f"{esrap_range(range)} has {len(invalid_ids)} invalid ids, {invalid_ids}")
+
+        accumulator += sum(invalid_ids)
 
     return accumulator
 
