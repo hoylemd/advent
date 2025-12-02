@@ -84,12 +84,21 @@ def get_invalid_ids(first: str, last: str) -> list[int]:
     invalids = []
 
     lbound, ubound = adjust_range(first, last)
-    ticker = get_ticker(lbound)
+    l_bound, u_bound = int(lbound), int(ubound)
 
-    if len(lbound) > len(ubound):
+    if l_bound > u_bound:
         return []  # whole range must be valid
 
+    if lbound == ubound:
+        return [int(lbound)]  # it's just the one
+
+    ticker = get_ticker(lbound)
     logger.debug(f"{first, last} -> {lbound}, {ubound}: {ticker=}")
+
+    idx = 0
+    while ((next_repeat := l_bound + (idx * ticker)) <= u_bound):
+        invalids.append(next_repeat)
+        idx += 1
 
     return invalids
 
