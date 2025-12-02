@@ -30,6 +30,11 @@ def get_ticker(id_sample: str) -> int:
     return int(f"1{'0' * (half - 1)}1")
 
 
+def first_half(id_sample: str) -> str:
+    assert len(id_sample) % 2 == 0, "Cannot first half for odd-length number"
+    return id_sample[:len(id_sample) // 2]
+
+
 def is_repeat(number: str):
     if len(number) % 2:
         return False  # even = cant be repeat
@@ -49,10 +54,12 @@ def adjust_range(first: str, last: str) -> tuple[str, str]:
     assert len(lower_bound) % 2 == 0, "Lower bound is not even after adjustment?"
 
     # adjust lbound to next repeat
-    first_half = lower_bound[:len(lower_bound) // 2]
-    lower_bound = first_half * 2
+    lower_bound = first_half(lower_bound) * 2
+    if (int(lower_bound) < int(first)):
+        lower_bound = f"{(int(first_half(lower_bound)) + 1)}" * 2
 
     assert is_repeat(lower_bound), "Lower bound is not a repeat after adjustment?"
+    assert int(lower_bound) >= int(first), "Lower bound is less than original first?"
 
     upper_bound = last
     if len(last) % 2:
@@ -61,6 +68,14 @@ def adjust_range(first: str, last: str) -> tuple[str, str]:
         upper_bound = f"{'9' * part_len}" * 2
 
     assert len(upper_bound) % 2 == 0, "Upper bound is not even after adjustment?"
+
+    # adjust ubound to previous repeat
+    upper_bound = first_half(upper_bound) * 2
+    if (int(upper_bound) > int(last)):
+        upper_bound = f"{(int(first_half(upper_bound)) - 1)}" * 2
+
+    assert is_repeat(lower_bound), "Upper bound is not a repeat after adjustment?"
+    assert int(upper_bound) <= int(last), "Upper bound is greater than original last?"
 
     return lower_bound, upper_bound
 
