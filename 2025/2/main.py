@@ -1,8 +1,11 @@
 import os
 from argparse import ArgumentParser
 from typing import Iterator
+import re
 
 from utils import logger, parse_input
+
+
 
 
 def parse_range(range: str) -> tuple[str, str]:
@@ -140,12 +143,36 @@ def gen_repeat_strings(first: str, last: str) -> list[int]:
     return repeats
 
 
+# original plan for p2, only off by 45 :/ not sure why
+# it's also *way* faster
+def check_for_repeats(number: str) -> bool:
+    length = 0
+    while length * 2 <= len(number):
+        length += 1
+        pattern = rf"^(.{{{length}}})\1+$"
+        if re.match(pattern, number):
+            return True
+
+    return False
+
+
+def brute_force_repeat_strings(first: str, last: str) -> list[int]:
+    repeats = []
+
+    for x in range(int(first), int(last)):
+        token = f"{x}"
+        if check_for_repeats(token):
+            repeats.append(x)
+
+    return repeats
+
+
 def answer2(ranges: Iterator[tuple[str, str]], **_: dict) -> int:
     accumulator = 0
 
     # solve part 2
     for range in ranges:
-        invalid_ids = set(gen_repeat_strings(*range))
+        invalid_ids = brute_force_repeat_strings(*range)
         logger.info(f"{esrap_range(range)} has {len(invalid_ids)} invalid ids, {invalid_ids}")
 
         accumulator += sum(invalid_ids)
