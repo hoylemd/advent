@@ -103,10 +103,52 @@ def get_invalid_ids(first: str, last: str) -> list[int]:
     return invalids
 
 
+def gen_repeat_strings_of_length(first: str, last: str, length: int) -> list[int]:
+    token = first[0:length]
+
+    l_bound, u_bound = int(first), int(last)
+
+    mult = 0  # len(first) // length
+    repeats = []
+
+    while mult <= len(last):
+        mult += 1
+        token = f"1{'0' * (length - 1)}"
+        logger.debug(f"{mult=}, {token=}")
+        while (int(token) <= int('9' * length)) and (probe := int(token * mult)) <= u_bound:
+            # last_token = token
+            token = f"{int(token) + 1}"
+
+            if probe < l_bound:
+                continue
+
+            logger.debug(f"adding {probe}")
+            repeats.append(probe)
+
+    return repeats
+
+
+def gen_repeat_strings(first: str, last: str) -> list[int]:
+    repeats = []
+
+    length = 1
+    while length * 2 <= len(last):
+        new_repeats = [r for r in gen_repeat_strings_of_length(first, last, length)]
+        repeats += new_repeats
+        length += 1
+
+    return repeats
+
+
 def answer2(ranges: Iterator[tuple[str, str]], **_: dict) -> int:
     accumulator = 0
 
     # solve part 2
+    for range in ranges:
+        invalid_ids = set(gen_repeat_strings(*range))
+        logger.info(f"{esrap_range(range)} has {len(invalid_ids)} invalid ids, {invalid_ids}")
+
+        accumulator += sum(invalid_ids)
 
     return accumulator
 
@@ -126,6 +168,8 @@ def answer1(ranges: Iterator[tuple[str, str]], **_: dict) -> int:
 
 INPUT_PARAMS = {
     ('test.txt'): {
+    },
+    ('test2.txt'): {
     },
     ('input.txt'): {
     }
