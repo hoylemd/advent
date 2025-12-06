@@ -32,21 +32,29 @@ class BatteryArray:
 
 
 def max_joltage(bank: list[int], num_batteries: int = 2) -> int:
-    left, left_idx = 0, 0
-    right, right_idx = 0, 0
+    buffer = []
+    joltage_map = [[] for _ in range(10)]
+    width = len(bank)
 
     for index, battery in enumerate(bank):
-        if battery > left and index < (len(bank) - 1):
-            left, left_idx = battery, index
-            right, right_idx = 0, 0
-            continue
+        joltage_map[battery].append(index)
 
-        if battery > right:
-            right, right_idx = battery, index
+    max_i = width - num_batteries
+    min_i = 0
+    for b in range(num_batteries):
+        for v in range(9, 0, -1):
+            for i in joltage_map[v]:
+                if i <= max_i and i >= min_i:
+                    min_i = i + 1
+                    buffer.append(v)
+                    break
+            if len(buffer) > b:
+                break
+        max_i += 1
+        logger.debug(f"{b}: {buffer}")
 
-    max_joltage = f"{left}{right}"
-    logger.debug(f"{max_joltage=}, from {left_idx} and {right_idx}")
-    return int(max_joltage)
+    sequence = ''.join(f"{b}" for b in buffer)
+    return int(sequence)
 
 
 def answer2(battery_array: BatteryArray, **_: dict) -> int:
