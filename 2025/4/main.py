@@ -1,12 +1,18 @@
 import os
 from argparse import ArgumentParser
-from typing import Iterator
+from typing import Iterator, Callable
 
 from utils import logger, parse_input
 
+type CellContent = str
+type Shader = Callable[[int, int, CellContent], str]
+
+
+def pass_through(x: int, y: int, value: CellContent) -> str:
+    return value
+
 
 class Map:
-
     def __init__(self, lines: Iterator[str], part: int = 1):
         self.part = part
 
@@ -15,19 +21,40 @@ class Map:
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(part {self.part})"
 
-    def parse_line(self, y: int, line: str) -> list[str]:
+    def parse_line(self, y: int, line: str) -> list[CellContent]:
         return [cell for cell in line]
 
-    def parse_lines(self, lines: Iterator[str]) -> Iterator[list[str]]:
+    def parse_lines(self, lines: Iterator[str]) -> Iterator[list[CellContent]]:
         for y, line in enumerate(lines):
             yield self.parse_line(y, line)
 
-    def esrap_line(self, y: int, row: list[str]) -> str:
+    def esrap_line(self, y: int, row: list[CellContent]) -> str:
         return f"{''.join(row)}"
 
     def esrap_lines(self) -> str:
         return '\n'.join(
             self.esrap_line(y, e) for y, e in enumerate(self.rows)
+        )
+
+    def cell(self, y: int, x: int) -> CellContent:
+        return self.rows[y][x]
+
+    def set_cell(self, y: int, x: int, value: CellContent):
+        self.rows[y][x] = value
+
+    def render_cell(self, y: int, x: int, value: CellContent, shader: Shader = pass_through, **kwargs) -> str:
+        return shader(y, x, value, **kwargs)
+
+    def render_row(self, y: int, row: list[str], row_delimiter: str = '', **kwargs) -> str:
+        return row_delimiter.join(
+            self.render_cell(y, x, value, **kwargs)
+            for x, value in enumerate(row)
+        )
+
+    def render(self, line_delimiter: str = '\n', **kwargs) -> str:
+        return line_delimiter.join(
+            self.render_row(y, row, **kwargs)
+            for y, row in enumerate(self.rows)
         )
 
 
@@ -41,6 +68,22 @@ def answer2(map: Map, **_: dict) -> int:
 
 def answer1(map: Map, **_: dict) -> int:
     accumulator = 0
+
+    known_accessible = set([
+        (0, 2), (0, 3), (0, 5), (0, 6), (0, 8),
+        (1, 0),
+        (2, 6),
+        (4, 0), (4, 9),
+        (7, 0),
+        (9, 0), (9, 2), (9, 8)
+    ])
+
+    def accessible_shader(y: int, x: int, value: CellContent) -> str:
+        if (y, x) in known_accessible:
+            return 'x'
+        return value
+
+    print(map.render(shader=accessible_shader))
 
     # solve part 1
 
