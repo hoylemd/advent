@@ -112,9 +112,9 @@ class RollMap(Map):
     def has_roll(self, y: int, x: int) -> bool:
         return (y, x) in self.rolls
 
-    def render(self) -> str:
+    def render(self, accessible: set[tuple[int, int]] = set()) -> str:
         def accessible_shader(y: int, x: int, value: CellContent) -> str:
-            if (y, x) in self.accessible:
+            if (y, x) in accessible:
                 return 'x'
             return value
 
@@ -146,23 +146,40 @@ class RollMap(Map):
             if self.count_adjacent_rolls(y, x) < 4
         )
 
+    def remove_rolls(self, targets: set[tuple[int, int]]):
+        for (y, x) in targets:
+            self.set_cell(y, x, '.')
+
+        self.rolls -= targets
+
 
 def answer2(map: RollMap, **_: dict) -> int:
-    accumulator = 0
+    removed_rolls = 0
 
-    # solve part 2
+    turns = 0
+    while len(accessible := map.find_accessible()) > 0:
+        turns += 1
+        logger.debug(f"Map after Turn {turns}:")
+        logger.debug(map.render(accessible=accessible))
 
-    return accumulator
+        map.remove_rolls(accessible)
+
+        removed_rolls += len(accessible)
+        logger.debug(f"Turn {turns}: removing {len(accessible)} rolls (total {removed_rolls})")
+
+    logger.debug(f"Removed {removed_rolls} in {turns} turns.")
+
+    return removed_rolls
 
 
 def answer1(map: RollMap, **_: dict) -> int:
 
-    map.accessible = map.find_accessible()
-    logger.debug(map.render())
+    accessible = map.find_accessible()
+    logger.debug(map.render(accessible=accessible))
 
     # solve part 1
 
-    return len(map.accessible)
+    return len(accessible)
 
 
 INPUT_PARAMS = {
