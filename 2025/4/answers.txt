@@ -1,5 +1,5 @@
 test.txt -1 echo
 test.txt 1 13
 input.txt 1 -
-test.txt 2 -
+test.txt 2 43
 input.txt 2 -
